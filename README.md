@@ -7,7 +7,7 @@ Related post: [Teach Machine to Trade](https://shuaiw.github.io/2018/02/11/teach
 
 ### Dependencies
 
-Python 2.7. To install all the libraries, run `pip install -r requirements.txt`
+Python 3. To install all the libraries, run `pip3 install -r requirements.txt`
 
 
 ### Table of content
