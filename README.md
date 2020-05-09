@@ -26,7 +26,7 @@ Python 3. To install all the libraries, run `pip3 install -r requirements.txt`
 **To test the model performance on validation set**, run `python3 run.py --mode validate --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
 
 
-**To test the model performance on test set**, run `python3 run.py --mode test --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
+**To test the model performance on test set**, run `python3 run.py --mode test --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Validation data portfolio value history at episode end would be saved to disk.
 
 
 ### Visualize
