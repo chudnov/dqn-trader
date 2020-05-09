@@ -22,15 +22,17 @@ Python 3. To install all the libraries, run `pip3 install -r requirements.txt`
 
 ### How to run
 
-**To train a Deep Q agent**, run `python run.py --mode train`. There are other parameters and I encourage you look at the `run.py` script. After training, a trained model as well as the portfolio value history at episode end would be saved to disk.
+**To train a Deep Q agent**, run `python3 run.py --mode train`. There are other parameters and I encourage you look at the `run.py` script. After training, a trained model as well as the portfolio value history at episode end would be saved to disk.
 
-**To test the model performance on validation set**, run `python run.py --mode validate --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
-
-
-**To test the model performance on test set**, run `python run.py --mode test --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
+**To test the model performance on validation set**, run `python3 run.py --mode validate --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
 
 
+**To test the model performance on test set**, run `python3 run.py --mode test --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
 
+
+### Visualize
+
+**To visualize performance** run `python3 visualize.py --file <pickle_file>`, where `<pickle_file>` points to the local portfolio value history file for a specific train/validate/test file.  
 
 
 

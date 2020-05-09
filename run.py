@@ -56,6 +56,9 @@ if __name__ == '__main__':
     scaler = get_scaler(env)
 
     portfolio_value = []
+    
+    #Append initial account value
+    portfolio_value.append(args.initial_invest)
 
     if args.mode != 'train':
         # remake the env with validation data
@@ -90,3 +93,4 @@ if __name__ == '__main__':
     # save portfolio value history to disk
     with open('portfolio_val/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
         pickle.dump(portfolio_value, fp)
+	print("Saved episode values in {}".format(fp))
