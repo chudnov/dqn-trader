@@ -7,7 +7,7 @@ import itertools
 
 class TradingEnv(gym.Env):
   """
-  A 3-stock (MSFT, IBM, QCOM) trading environment.
+  A x-stock trading environment.
 
   State: [# of stock owned, current stock prices, cash in hand]
     - array of length n_stock * 2 + 1

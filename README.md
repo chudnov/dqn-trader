@@ -13,16 +13,25 @@ Python 3. To install all the libraries, run `pip3 install -r requirements.txt`
 ### Table of content
 
 * `agent.py`: a Deep Q learning agent
-* `envs.py`: a simple 3-stock trading environment
+* `envs.py`: a simple x-stock trading environment
 * `model.py`: a multi-layer perceptron as the function approximator
 * `utils.py`: some utility functions
 * `run.py`: train/test logic
 * `requirement.txt`: all dependencies
-* `data/`: 3 csv files with IBM, MSFT, and QCOM stock prices from Jan 3rd, 2000 to Dec 27, 2017 (5629 days). The data was retrieved using [Alpha Vantage API](https://www.alphavantage.co/)
-
+* `data/`: stock price data
 
 ### How to run
 
 **To train a Deep Q agent**, run `python run.py --mode train`. There are other parameters and I encourage you look at the `run.py` script. After training, a trained model as well as the portfolio value history at episode end would be saved to disk.
 
-**To test the model performance**, run `python run.py --mode test --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
+**To test the model performance on validation set**, run `python run.py --mode validate --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
+
+
+**To test the model performance on test set**, run `python run.py --mode test --weights <trained_model>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
+
+
+
+
+
+
+
