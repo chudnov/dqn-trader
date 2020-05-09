@@ -1,9 +1,8 @@
 
 ## Overview
 
-This is the code for [this](https://youtu.be/rRssY6FrTvU) video on Youtube by Siraj Raval on Q Learning for Trading as part of the Move 37 course at [School of AI](https://www.theschool.ai). Credits for this code go to [ShuaiW](https://github.com/ShuaiW/teach-machine-to-trade). 
+A stock trader powered with deep q-network. 
 
-Related post: [Teach Machine to Trade](https://shuaiw.github.io/2018/02/11/teach-machine-to-trade.html)
 
 ### Dependencies
 
@@ -36,4 +35,5 @@ Python 3. To install all the libraries, run `pip3 install -r requirements.txt`
 
 
 
+Credits for starter code go to [ShuaiW](https://github.com/ShuaiW/teach-machine-to-trade). 
 
