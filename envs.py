@@ -4,7 +4,6 @@ from gym.utils import seeding
 import numpy as np
 import itertools
 
-
 class TradingEnv(gym.Env):
   """
   A x-stock trading environment.
@@ -41,7 +40,7 @@ class TradingEnv(gym.Env):
     price_range = [[0, mx] for mx in stock_max_price]
     cash_in_hand_range = [[0, init_invest * 2]]
     self.observation_space = spaces.MultiDiscrete(stock_range + price_range + cash_in_hand_range)
-
+   
     # seed and start
     self._seed()
     self._reset()

@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     #print("There are {} rows".format(data_size))
     #print("The training data spans from 0 to {}".format(end_row_train-1))
-    #print("The validation data spans from {} to {}".format(
+    # print("The validation data spans from {} to {}".format(
     #    end_row_train, end_row_validate-1))
     #print("The test data spans from {} to {}".format(end_row_validate, data_size))
 
@@ -56,8 +56,8 @@ if __name__ == '__main__':
     scaler = get_scaler(env)
 
     portfolio_value = []
-    
-    #Append initial account value
+
+    # Append initial account value
     portfolio_value.append(args.initial_invest)
 
     if args.mode != 'train':
@@ -71,7 +71,9 @@ if __name__ == '__main__':
 
     for e in range(args.episode):
         state = env.reset()
+
         state = scaler.transform([state])
+
         for time in range(env.n_step):
             action = agent.act(state)
             next_state, reward, done, info = env.step(action)
@@ -93,4 +95,4 @@ if __name__ == '__main__':
     # save portfolio value history to disk
     with open('portfolio_val/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
         pickle.dump(portfolio_value, fp)
-	print("Saved episode values in {}".format(fp))
+        print("Saved episode values in {}".format(fp))
