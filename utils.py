@@ -2,24 +2,28 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from stockstats import StockDataFrame as Sdf
+
+
+MAX_PROFIT_FACTOR = 3
 
 '''
 Tinker Source #1:
 
-a) which indicators to use
+a) which features to use
 b) time ranges for indicators
 '''
 
+main_features = [
+    'close',
+    'volume'
+]
+
+# Check https://pypi.org/project/stockstats/ for more indicators
 technical_indicators = [
-	('sma', 15), 
-	('sma', 60), 
-	('ema', 30),
-	('rsi', 14), 
-	('atr', 14),
-	('roc', 10),
-	('macd', [12, 26, 9]), #returns macd, macdsignal, macdhist in talib
-	('stoch', [21, 7, 7]) #returns slowk, slowd in talib
-	#more indicators here
+    'rsi_14',
+    'cci_14',
+    'dx_14'
 ]
 
 
@@ -27,51 +31,61 @@ def get_data(col='close'):
     """ Returns a n x n_step array """
     stock_values = []
     for stock_csv in os.listdir('data/'):
-        stock_data = pd.read_csv('data/{}'.format(stock_csv))
-        curr_stock_value = stock_data.values[::-1]
-	
-	inputs = {
-    	    'open': curr_stock_value[:, 0], 
-	    'high': curr_stock_value[:, 1],
-	    'low': curr_stock_value[:, 2],
-	    'close': curr_stock_value[:, 3],
-	    'volume': curr_stock_value[:, 4]
-	}
- 
-	for indicator in technical_indicators:
-		indicator_data = None
-		if(indicator[0] == 'macd'):
-			macd, macdsignal, macdhist = Function(indicator[0])(inputs['close'], 
-				fastperiod=indicator[1][0], 
-				slowperiod=indicator[1][1], 
-				signalperiod=indicator[1][2])
-					
+        # Data frame w/ open, close, high, low, volume values and reverse
+        df = pd.read_csv('data/{}'.format(stock_csv)).iloc[::-1]
 
-	#just get the close column - TEMP
-	stock_values.append(curr_stock_value[:, 3])
-	
+        # Convert to stockdataframe
+        stock = Sdf.retype(df)
 
-    # recent price are at top; reverse it
+        for indicator in technical_indicators:
+            stock.get(indicator)
+
+        mask = main_features + technical_indicators
+        stock_table_with_indicators = stock.dropna(
+            how='any').loc[:, mask].to_numpy()
+        stock_values.append(stock_table_with_indicators)
+
     return np.array(stock_values)
+
+
+'''
+Tinker Source #2:
+
+a) which scaler to use
+'''
 
 
 def get_scaler(env):
     """ Takes a env and returns a scaler for its observation space """
-    low = [0] * (env.n_stock * 2 + 1)
 
+    low = []
     high = []
+
     max_price = env.stock_price_history.max(axis=1)
     min_price = env.stock_price_history.min(axis=1)
-    max_cash = env.init_invest * 3  # 3 is a magic number...
+
+    indicators_max = env.stock_indicators_history.max(axis=1)
+    indicators_min = env.stock_indicators_history.min(axis=1)
+
+    max_cash = env.init_invest * MAX_PROFIT_FACTOR
     max_stock_owned = max_cash // min_price
+
     for i in max_stock_owned:
+        low.append(0)
         high.append(i)
     for i in max_price:
+        low.append(0)
         high.append(i)
+    for i in range(0, len(indicators_max)):
+        low.extend(list(indicators_min[i]))
+        high.extend(list(indicators_max[i]))
+
+    low.append(0)
     high.append(max_cash)
 
-    scaler = StandardScaler()
+    scaler = StandardScaler() #MinMaxScaler or RobustScaler
     scaler.fit([low, high])
+
     print("Scaler is {}".format(scaler))
     return scaler
 

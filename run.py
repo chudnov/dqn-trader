@@ -33,21 +33,22 @@ if __name__ == '__main__':
 
     timestamp = time.strftime('%Y%m%d%H%M')
 
-    data = np.around(get_data())
-
+    data = np.array([np.around(d) for d in get_data()])
+ 
     data_size = data[0].shape[0]
     end_row_train = (int)(data_size * (args.ratio / 100))
     end_row_validate = (data_size - end_row_train)//2 + end_row_train
 
-    train_data = data[:, :end_row_train]
-    validation_data = data[:, end_row_train:end_row_validate]
-    test_data = data[:, end_row_validate:]
+    train_data = np.array([d[:end_row_train, :] for d in data])
+    validation_data = np.array([d[end_row_train:end_row_validate, :] for d in data]) 
+    test_data = np.array([d[end_row_validate:, :] for d in data])
 
-    #print("There are {} rows".format(data_size))
-    #print("The training data spans from 0 to {}".format(end_row_train-1))
-    # print("The validation data spans from {} to {}".format(
-    #    end_row_train, end_row_validate-1))
-    #print("The test data spans from {} to {}".format(end_row_validate, data_size))
+    '''
+    print("There are {} rows".format(data_size))
+    print("The training data spans from 0 to {}".format(end_row_train-1))
+    print("The validation data spans from {} to {}".format(end_row_train, end_row_validate-1))
+    print("The test data spans from {} to {}".format(end_row_validate, data_size))
+    '''
 
     env = TradingEnv(train_data, args.initial_invest)
     state_size = env.observation_space.shape

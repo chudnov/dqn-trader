@@ -21,14 +21,19 @@ class TradingEnv(gym.Env):
   """
   def __init__(self, train_data, init_invest=20000):
     # data
-    self.stock_price_history = np.around(train_data) # round up to integer to reduce state space
+    self.stock_price_history = train_data[:, :, 0] 
+    self.stock_indicators_history = train_data[:, :, 2:] 
     self.n_stock, self.n_step = self.stock_price_history.shape
 
+    indicators_max = self.stock_indicators_history.max(axis=1)
+    indicators_min = self.stock_indicators_history.min(axis=1)
+    
     # instance attributes
     self.init_invest = init_invest
     self.cur_step = None
     self.stock_owned = None
     self.stock_price = None
+    self.indicators = None
     self.cash_in_hand = None
 
     # action space
@@ -38,8 +43,9 @@ class TradingEnv(gym.Env):
     stock_max_price = self.stock_price_history.max(axis=1)
     stock_range = [[0, init_invest * 2 // mx] for mx in stock_max_price]
     price_range = [[0, mx] for mx in stock_max_price]
+    indicator_range = [[list(indicators_min[i])[j], list(indicators_max[i])[j]] for i in range(0, len(indicators_max)) for j in range(len(list(indicators_min[i])))]
     cash_in_hand_range = [[0, init_invest * 2]]
-    self.observation_space = spaces.MultiDiscrete(stock_range + price_range + cash_in_hand_range)
+    self.observation_space = spaces.MultiDiscrete(stock_range + price_range + indicator_range + cash_in_hand_range)
    
     # seed and start
     self._seed()
@@ -55,7 +61,9 @@ class TradingEnv(gym.Env):
     self.cur_step = 0
     self.stock_owned = [0] * self.n_stock
     self.stock_price = self.stock_price_history[:, self.cur_step]
+    self.indicators = self.stock_indicators_history[:, self.cur_step, :]
     self.cash_in_hand = self.init_invest
+    print(list(self.indicators.flatten()))
     return self._get_obs()
 
 
@@ -64,6 +72,7 @@ class TradingEnv(gym.Env):
     prev_val = self._get_val()
     self.cur_step += 1
     self.stock_price = self.stock_price_history[:, self.cur_step] # update price
+    self.indicators = self.stock_indicators_history[:, self.cur_step, :] # update indicators
     self._trade(action)
     cur_val = self._get_val()
     reward = cur_val - prev_val
@@ -76,6 +85,7 @@ class TradingEnv(gym.Env):
     obs = []
     obs.extend(self.stock_owned)
     obs.extend(list(self.stock_price))
+    obs.extend(list(self.indicators.flatten()))
     obs.append(self.cash_in_hand)
     return obs
 
@@ -86,7 +96,7 @@ class TradingEnv(gym.Env):
 
   def _trade(self, action):
     # all combo to sell(0), hold(1), or buy(2) stocks
-    action_combo = list(map(list, itertools.product([0, 1, 2], repeat=self.n_stock)))
+    action_combo = list(itertools.product([0, 1, 2], repeat=self.n_stock))
     action_vec = action_combo[action]
 
     # one pass to get sell/buy index
