@@ -63,7 +63,6 @@ class TradingEnv(gym.Env):
     self.stock_price = self.stock_price_history[:, self.cur_step]
     self.indicators = self.stock_indicators_history[:, self.cur_step, :]
     self.cash_in_hand = self.init_invest
-    print(list(self.indicators.flatten()))
     return self._get_obs()
 
 
