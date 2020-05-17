@@ -9,8 +9,8 @@ class TradingEnv(gym.Env):
     """
     A x-stock trading environment.
 
-    State: [position for stock, current stock prices, indicators for stock price, cash in hand]
-      - array of length n_stock * 2 + 1
+    State: [current stock prices, indicators for stock price, cash in hand]
+      - array of length n_stock * (num indicators + 1) + 1
       - price is discretized (to integer) to reduce state space
       - use close price for each stock
       - cash in hand is evaluated at each step based on action performed
