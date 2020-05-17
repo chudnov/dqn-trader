@@ -9,7 +9,7 @@ from stockstats import StockDataFrame as Sdf
 pd.options.mode.chained_assignment = None
 
 
-MAX_PROFIT_FACTOR = 3
+MAX_PROFIT_FACTOR = 5
 
 '''
 Tinker Source #1:
@@ -35,9 +35,9 @@ def get_data(col='close'):
     """ Returns a n x n_step array """
     stock_values = []
     for stock_csv in os.listdir('data/'):
-        # Data frame w/ open, close, high, low, volume values and reverse
+        if(stock_csv.startswith('.')): continue
+	# Data frame w/ open, close, high, low, volume values and reverse
         df = pd.read_csv('data/{}'.format(stock_csv)).iloc[::-1]
-
         # Convert to stockdataframe
         stock = Sdf.retype(df)
 
@@ -66,17 +66,12 @@ def get_scaler(env):
     high = []
 
     max_price = env.stock_price_history.max(axis=1)
-    min_price = env.stock_price_history.min(axis=1)
 
     indicators_max = env.stock_indicators_history.max(axis=1)
     indicators_min = env.stock_indicators_history.min(axis=1)
 
     max_cash = env.init_invest * MAX_PROFIT_FACTOR
-    max_stock_owned = max_cash // min_price
 
-    for i in max_stock_owned:
-        low.append(0)
-        high.append(i)
     for i in max_price:
         low.append(0)
         high.append(i)
@@ -87,7 +82,7 @@ def get_scaler(env):
     low.append(0)
     high.append(max_cash)
 
-    scaler = StandardScaler() #MinMaxScaler or RobustScaler
+    scaler = StandardScaler()  # MinMaxScaler or RobustScaler
     scaler.fit([low, high])
 
     print("Scaler is {}".format(scaler))

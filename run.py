@@ -8,8 +8,6 @@ from envs import TradingEnv
 from agent import DQNAgent
 from utils import get_data, get_scaler, maybe_make_dir
 
-N_HIDDEN_LAYERS = 2
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--episode', type=int, default=2000,
@@ -24,6 +22,10 @@ if __name__ == '__main__':
                         help='a trained model weights')
     parser.add_argument('-r', '--ratio', type=int, default=70,
                         help='% of data for train')
+    parser.add_argument('-l', '--layers', type=int, default=2,
+			help='number of hidden layers') 
+    parser.add_argument('-n', '--neurons', type=int, default=24,
+			help='number of neurons layers')
     args = parser.parse_args()
 
     if args.mode not in ['train', 'validate', 'test']:
@@ -35,26 +37,21 @@ if __name__ == '__main__':
     timestamp = time.strftime('%Y%m%d%H%M')
 
     data = np.array([np.around(d) for d in get_data()])
- 
+
     data_size = data[0].shape[0]
     end_row_train = (int)(data_size * (args.ratio / 100))
     end_row_validate = (data_size - end_row_train)//2 + end_row_train
 
     train_data = np.array([d[:end_row_train, :] for d in data])
-    validation_data = np.array([d[end_row_train:end_row_validate, :] for d in data]) 
+    validation_data = np.array(
+        [d[end_row_train:end_row_validate, :] for d in data])
     test_data = np.array([d[end_row_validate:, :] for d in data])
-
-    '''
-    print("There are {} rows".format(data_size))
-    print("The training data spans from 0 to {}".format(end_row_train-1))
-    print("The validation data spans from {} to {}".format(end_row_train, end_row_validate-1))
-    print("The test data spans from {} to {}".format(end_row_validate, data_size))
-    '''
 
     env = TradingEnv(train_data, args.initial_invest)
     state_size = env.observation_space.shape
     action_size = env.action_space.n
-    agent = DQNAgent(state_size, action_size, N_HIDDEN_LAYERS)
+    agent = DQNAgent(state_size, action_size,
+                     args.layers, args.neurons)
     scaler = get_scaler(env)
 
     portfolio_value = []
@@ -78,16 +75,17 @@ if __name__ == '__main__':
 
         for time in range(env.n_step):
             action = agent.act(state)
-            next_state, reward, done, info = env.step(action)
+            next_state, reward, done = env.step(action)
             next_state = scaler.transform([next_state])
             if args.mode == 'train':
                 agent.remember(state, action, reward, next_state, done)
             state = next_state
             if done:
-                print("episode: {}/{}, episode end value: ${:,.2f}".format(
-                    e + 1, args.episode, info['cur_val']))
+                count, ratio, bal, unrealized = env._stats().values()
+                print("episode: {}/{}, performed {} trades, {:,.2%} are profitable, with a final episode unrealized pnl of: ${:,.2f}".format(
+                    e + 1, args.episode, count, ratio, unrealized))
                 # append episode end portfolio value
-                portfolio_value.append(info['cur_val'])
+                portfolio_value.append(unrealized)
                 break
             if args.mode == 'train' and len(agent.memory) > args.batch_size:
                 agent.replay(args.batch_size)
