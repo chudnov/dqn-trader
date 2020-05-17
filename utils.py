@@ -5,6 +5,10 @@ from sklearn.preprocessing import StandardScaler
 from stockstats import StockDataFrame as Sdf
 
 
+# Remove chaining warning
+pd.options.mode.chained_assignment = None
+
+
 MAX_PROFIT_FACTOR = 3
 
 '''

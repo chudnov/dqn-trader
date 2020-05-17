@@ -8,6 +8,7 @@ from envs import TradingEnv
 from agent import DQNAgent
 from utils import get_data, get_scaler, maybe_make_dir
 
+N_HIDDEN_LAYERS = 2
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     env = TradingEnv(train_data, args.initial_invest)
     state_size = env.observation_space.shape
     action_size = env.action_space.n
-    agent = DQNAgent(state_size, action_size)
+    agent = DQNAgent(state_size, action_size, N_HIDDEN_LAYERS)
     scaler = get_scaler(env)
 
     portfolio_value = []
