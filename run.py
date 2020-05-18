@@ -26,6 +26,9 @@ if __name__ == '__main__':
                         help='number of hidden layers')
     parser.add_argument('-n', '--neurons', type=int, default=24,
                         help='number of neurons layers')
+    parser.add_argument('-d', '--detrend', type=bool, default=False,
+                        help='detrend or not')
+
     args = parser.parse_args()
 
     if args.mode not in ['train', 'validate', 'test']:
@@ -36,7 +39,7 @@ if __name__ == '__main__':
 
     timestamp = time.strftime('%Y%m%d%H%M')
 
-    data = np.array([np.around(d) for d in get_data()])
+    data = np.array([np.around(d) for d in get_data(args.detrend)])
 
     data_size = data[0].shape[0]
     end_row_train = (int)(data_size * (args.ratio / 100))

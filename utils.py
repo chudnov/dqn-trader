@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from stockstats import StockDataFrame as Sdf
+import matplotlib.pyplot as plt
 
 # Remove chaining warning
 pd.options.mode.chained_assignment = None
@@ -30,7 +31,7 @@ technical_indicators = [
 ]
 
 
-def get_data(col='close'):
+def get_data(is_detrend=False):
     """ Returns a n x n_step array """
     stock_values = []
     for stock_csv in os.listdir('data/'):
@@ -38,6 +39,9 @@ def get_data(col='close'):
             continue
         # Data frame w/ open, close, high, low, volume values and reverse
         df = pd.read_csv('data/{}'.format(stock_csv)).iloc[::-1]
+
+        if(is_detrend):
+            df = detrend(df)
 
         # Convert to stockdataframe
         stock = Sdf.retype(df)
@@ -88,6 +92,13 @@ def get_scaler(env, max_profit_factor):
 
     print("Scaler is {}".format(scaler))
     return scaler
+
+
+def detrend(df):
+    del df[df.columns[0]]
+    new_df = df.diff(periods=1).iloc[1:]
+    new_df = new_df.add(abs(new_df.min()))
+    return new_df
 
 
 def maybe_make_dir(directory):
