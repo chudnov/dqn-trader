@@ -4,12 +4,11 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from stockstats import StockDataFrame as Sdf
 
-
 # Remove chaining warning
 pd.options.mode.chained_assignment = None
+# Remove summary printing
+pd.options.display.max_rows = None
 
-
-MAX_PROFIT_FACTOR = 5
 
 '''
 Tinker Source #1:
@@ -35,9 +34,11 @@ def get_data(col='close'):
     """ Returns a n x n_step array """
     stock_values = []
     for stock_csv in os.listdir('data/'):
-        if(stock_csv.startswith('.')): continue
-	# Data frame w/ open, close, high, low, volume values and reverse
+        if(stock_csv.startswith('.')):
+            continue
+        # Data frame w/ open, close, high, low, volume values and reverse
         df = pd.read_csv('data/{}'.format(stock_csv)).iloc[::-1]
+
         # Convert to stockdataframe
         stock = Sdf.retype(df)
 
@@ -59,7 +60,7 @@ a) which scaler to use
 '''
 
 
-def get_scaler(env):
+def get_scaler(env, max_profit_factor):
     """ Takes a env and returns a scaler for its observation space """
 
     low = []
@@ -70,7 +71,7 @@ def get_scaler(env):
     indicators_max = env.stock_indicators_history.max(axis=1)
     indicators_min = env.stock_indicators_history.min(axis=1)
 
-    max_cash = env.init_invest * MAX_PROFIT_FACTOR
+    max_cash = env.init_invest
 
     for i in max_price:
         low.append(0)

@@ -23,9 +23,9 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--ratio', type=int, default=70,
                         help='% of data for train')
     parser.add_argument('-l', '--layers', type=int, default=2,
-			help='number of hidden layers') 
+                        help='number of hidden layers')
     parser.add_argument('-n', '--neurons', type=int, default=24,
-			help='number of neurons layers')
+                        help='number of neurons layers')
     args = parser.parse_args()
 
     if args.mode not in ['train', 'validate', 'test']:
@@ -51,13 +51,16 @@ if __name__ == '__main__':
     state_size = env.observation_space.shape
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size,
-                     args.layers, args.neurons)
-    scaler = get_scaler(env)
+                     args.layers, args.neurons, epsilon = 1 if args.mode == "train" else 0)
+    
+    MAX_PROFIT_FACTOR = 3
+    scaler = get_scaler(env, MAX_PROFIT_FACTOR)
 
     portfolio_value = []
 
     # Append initial account value
     portfolio_value.append(args.initial_invest)
+
 
     if args.mode != 'train':
         # remake the env with validation data

@@ -3,7 +3,7 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 
 
-def mlp(n_obs, n_action, n_hidden_layer=1, n_neuron_per_layer=24,
+def mlp(n_obs, n_action, n_hidden_layer=2, n_neuron_per_layer=24,
         activation='relu', loss='mse', learning_rate = 0.01):
   """ A multi-layer perceptron """
   model = Sequential()

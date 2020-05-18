@@ -7,7 +7,7 @@ from model import mlp
 
 class DQNAgent(object):
   """ A simple Deep Q agent """
-  def __init__(self, state_size, action_size, memory_size = 2000, gamma=0.95, epsilon=1.0, epsilon_min=.01, epsilon_decay=0.995):
+  def __init__(self, state_size, action_size, num_layers, num_neurons, memory_size = 2000, gamma=0.95, epsilon=1.0, epsilon_min=.01, epsilon_decay=0.995):
     self.state_size = state_size
     self.action_size = action_size
     self.memory = deque(maxlen=memory_size)
@@ -15,7 +15,7 @@ class DQNAgent(object):
     self.epsilon = epsilon  # exploration rate
     self.epsilon_min = epsilon_min
     self.epsilon_decay = epsilon_decay
-    self.model = mlp(state_size, action_size)
+    self.model = mlp(state_size, action_size, num_layers, num_neurons)
 
 
   def remember(self, state, action, reward, next_state, done):
