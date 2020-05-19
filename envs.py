@@ -30,6 +30,8 @@ class TradingEnv(gym.Env):
         indicators_max = self.stock_indicators_history.max(axis=1)
         indicators_min = self.stock_indicators_history.min(axis=1)
 
+        self.signals = None
+
         # instance attributes
         self.init_invest = init_invest
         self.cur_step = None
@@ -85,6 +87,7 @@ class TradingEnv(gym.Env):
         return [seed]
 
     def _reset(self):
+        self.signals = []
         self.cur_step = 0
         self.enter_price = [0] * self.n_stock
         self.stock_owned = [0] * self.n_stock
@@ -100,14 +103,14 @@ class TradingEnv(gym.Env):
 
     def _step(self, action):
         assert self.action_space.contains(action)
-        prev_val = self.cash_in_hand  # self._get_val() for unrealized pnl
+        prev_val = self._get_val()  # self.cash_in_hand for realized pnl
         self.cur_step += 1
         # update price
         self.stock_price = self.stock_price_history[:, self.cur_step]
         # update indicators
         self.indicators = self.stock_indicators_history[:, self.cur_step, :]
         self._trade(action)
-        cur_val = self.cash_in_hand  # self._get_val() for unrealized pnl
+        cur_val = self._get_val()  # self.cash_in_hand for realized pnl
         reward = cur_val - prev_val
         done = self.cur_step == self.n_step - 1
         return self._get_obs(), reward, done
@@ -137,11 +140,13 @@ class TradingEnv(gym.Env):
                 buy_index.append(i)
 
         # two passes: sell first, then buy; might be naive in real-world settings
-
         if sell_index:
             for i in sell_index:
                 if(self.stock_owned[i] == 0):
                     continue
+
+                ##BADD##
+                self.signals.append(0)
                 self.trade_count += 1
                 self.cash_in_hand += self.stock_price[i] * self.stock_owned[i]
                 profit = self.stock_price[i] - self.enter_price[i]
@@ -152,6 +157,10 @@ class TradingEnv(gym.Env):
 
         if buy_index:
             can_buy = True
+
+            ##BADD##
+            self.signals.append(2)
+
             while can_buy:
                 for i in buy_index:
                     if self.cash_in_hand > self.stock_price[i]:
@@ -160,3 +169,7 @@ class TradingEnv(gym.Env):
                         self.enter_price[i] = self.stock_price[i]
                     else:
                         can_buy = False
+            ##BADD##
+            return
+        ##BADD##
+        self.signals.append(1)

@@ -75,7 +75,7 @@ def get_scaler(env, max_profit_factor):
     indicators_max = env.stock_indicators_history.max(axis=1)
     indicators_min = env.stock_indicators_history.min(axis=1)
 
-    max_cash = env.init_invest
+    max_cash = env.init_invest * max_profit_factor
 
     for i in max_price:
         low.append(0)
@@ -99,6 +99,24 @@ def detrend(df):
     new_df = df.diff(periods=1).iloc[1:]
     new_df = new_df.add(abs(new_df.min()))
     return new_df
+
+
+def view_signals(prices, signals):
+    df = pd.DataFrame()
+    s = np.array(signals).flatten()
+    df['Close'] = prices[:, :, 0].flatten()
+    df['Buy'] = pd.Series(np.where(s == 2, 1, 0))
+    df['Sell'] = pd.Series(np.where(s == 0, 1, 0))
+    plt.figure(figsize=(20,5))
+    plt.plot(df['Close'], zorder=0)
+    plt.scatter(df[df['Buy'] == 1].index.tolist(), df.loc[df['Buy'] ==
+                                                       1, 'Close'].values, zorder=1, label='skitscat', color='green', s=30, marker=".")
+    
+    plt.scatter(df[df['Sell'] == 1].index.tolist(), df.loc[df['Sell'] ==
+                                                       1, 'Close'].values, zorder=1,label='skitscat', color='red', s=30, marker=".")
+    plt.xlabel('Timestep')  
+    plt.ylabel('Close Price') 
+    plt.show()
 
 
 def maybe_make_dir(directory):

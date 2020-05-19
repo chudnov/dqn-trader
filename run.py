@@ -4,9 +4,12 @@ import numpy as np
 import argparse
 import re
 
+import matplotlib.pyplot as plt
+import pandas as pd
+
 from envs import TradingEnv
 from agent import DQNAgent
-from utils import get_data, get_scaler, maybe_make_dir
+from utils import get_data, get_scaler, maybe_make_dir, view_signals
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -54,9 +57,9 @@ if __name__ == '__main__':
     state_size = env.observation_space.shape
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size,
-                     args.layers, args.neurons, epsilon = 1 if args.mode == "train" else 0)
-    
-    MAX_PROFIT_FACTOR = 3
+                     args.layers, args.neurons, epsilon=1 if args.mode == "train" else 0)
+
+    MAX_PROFIT_FACTOR = 5
     scaler = get_scaler(env, MAX_PROFIT_FACTOR)
 
     portfolio_value = []
@@ -64,11 +67,10 @@ if __name__ == '__main__':
     # Append initial account value
     portfolio_value.append(args.initial_invest)
 
-
     if args.mode != 'train':
         # remake the env with validation data
-        env = TradingEnv(validation_data if args.mode ==
-                         'validate' else test_data, args.initial_invest)
+        d = validation_data if args.mode == 'validate' else test_data
+        env = TradingEnv(d, args.initial_invest)
         # load trained weights
         agent.load(args.weights)
         # when validate, the timestamp is same as time when weights was trained
@@ -102,3 +104,17 @@ if __name__ == '__main__':
     with open('portfolio_val/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
         pickle.dump(portfolio_value, fp)
         print("Saved episode values in {}".format(fp))
+
+    if(args.mode != 'train'):
+        data = np.array([d for d in get_data(args.detrend)])
+        test_data = np.array([d[end_row_validate:, :] for d in data])
+        validation_data = np.array(
+            [d[end_row_train:end_row_validate, :] for d in data])
+        view_signals(validation_data if args.mode ==
+                     'validate' else test_data, env.signals)
+'''
+	# save signal history to dick 
+	with open('signals/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
+	    pickle.dump(signals, fp)
+	    print("Saved signals in {}".format(fp))
+'''
