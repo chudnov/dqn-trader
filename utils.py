@@ -84,7 +84,7 @@ def get_scaler(env, max_profit_factor):
         low.extend(list(indicators_min[i]))
         high.extend(list(indicators_max[i]))
 
-    low.append(0)
+    low.append(-env.init_invest)
     high.append(max_cash)
 
     scaler = StandardScaler()  # MinMaxScaler or RobustScaler

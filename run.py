@@ -53,13 +53,15 @@ if __name__ == '__main__':
         [d[end_row_train:end_row_validate, :] for d in data])
     test_data = np.array([d[end_row_validate:, :] for d in data])
 
-    env = TradingEnv(train_data, args.initial_invest)
+    # Profit Factor CONST
+    MAX_PROFIT_FACTOR = 4
+
+    env = TradingEnv(train_data, MAX_PROFIT_FACTOR, args.initial_invest)
     state_size = env.observation_space.shape
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size,
                      args.layers, args.neurons, epsilon=1 if args.mode == "train" else 0)
 
-    MAX_PROFIT_FACTOR = 5
     scaler = get_scaler(env, MAX_PROFIT_FACTOR)
 
     portfolio_value = []
@@ -70,7 +72,7 @@ if __name__ == '__main__':
     if args.mode != 'train':
         # remake the env with validation data
         d = validation_data if args.mode == 'validate' else test_data
-        env = TradingEnv(d, args.initial_invest)
+        env = TradingEnv(d, MAX_PROFIT_FACTOR, args.initial_invest)
         # load trained weights
         agent.load(args.weights)
         # when validate, the timestamp is same as time when weights was trained
@@ -107,9 +109,13 @@ if __name__ == '__main__':
 
     if(args.mode != 'train'):
         data = np.array([d for d in get_data(args.detrend)])
+        train_data = np.array([d[:end_row_train, :] for d in data])
         test_data = np.array([d[end_row_validate:, :] for d in data])
         validation_data = np.array(
             [d[end_row_train:end_row_validate, :] for d in data])
+        # if(args.mode == 'train'):
+        #    view_signals(train_data, env.signals)
+        # else:
         view_signals(validation_data if args.mode ==
                      'validate' else test_data, env.signals)
 '''

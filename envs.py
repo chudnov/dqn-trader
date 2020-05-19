@@ -9,7 +9,7 @@ class TradingEnv(gym.Env):
     """
     A x-stock trading environment.
 
-    State: [current stock prices, indicators for stock price, cash in hand]
+    State: [current stock prices, indicators for stock price, profit]
       - array of length n_stock * (num indicators + 1) + 1
       - price is discretized (to integer) to reduce state space
       - use close price for each stock
@@ -21,7 +21,7 @@ class TradingEnv(gym.Env):
       - if buying multiple stock, equally distribute cash in hand and then utilize the balance
     """
 
-    def __init__(self, train_data, init_invest=20000):
+    def __init__(self, train_data, max_profit_factor, init_invest=20000):
         # data
         self.stock_price_history = train_data[:, :, 0]
         self.stock_indicators_history = train_data[:, :, 2:]
@@ -47,6 +47,8 @@ class TradingEnv(gym.Env):
         self.trades_profitable = None
         # Balance from completed trades
         self.cash_in_hand = None
+        # Total profit
+        self.profit = None
         # Balance from completed and open trades
         self.account_balance_unrealised = None
 
@@ -58,9 +60,9 @@ class TradingEnv(gym.Env):
         price_range = [[0, mx] for mx in stock_max_price]
         indicator_range = [[list(indicators_min[i])[j], list(indicators_max[i])[j]] for i in range(
             0, len(indicators_max)) for j in range(len(list(indicators_min[i])))]
-        cash_in_hand_range = [[0, init_invest * 2]]
+        profit_range = [[-init_invest, init_invest * max_profit_factor]]
         self.observation_space = spaces.MultiDiscrete(
-            price_range + indicator_range + cash_in_hand_range)
+            price_range + indicator_range + profit_range)
 
         # seed and start
         self._seed()
@@ -94,6 +96,7 @@ class TradingEnv(gym.Env):
         self.stock_price = self.stock_price_history[:, self.cur_step]
         self.indicators = self.stock_indicators_history[:, self.cur_step, :]
         self.cash_in_hand = self.init_invest
+        self.profit = 0
 
         self.trade_count = 0
         self.trades_profitable = 0
@@ -119,7 +122,7 @@ class TradingEnv(gym.Env):
         obs = []
         obs.extend(list(self.stock_price))
         obs.extend(list(self.indicators.flatten()))
-        obs.append(self.cash_in_hand)
+        obs.append(self.profit)
         return obs
 
     def _get_val(self):
@@ -144,12 +147,12 @@ class TradingEnv(gym.Env):
             for i in sell_index:
                 if(self.stock_owned[i] == 0):
                     continue
-
                 ##BADD##
                 self.signals.append(0)
                 self.trade_count += 1
                 self.cash_in_hand += self.stock_price[i] * self.stock_owned[i]
                 profit = self.stock_price[i] - self.enter_price[i]
+                self.profit += profit * self.stock_owned[i]
                 if profit > 0:
                     self.trades_profitable += 1
                 self.enter_price[i] = 0
@@ -157,19 +160,21 @@ class TradingEnv(gym.Env):
 
         if buy_index:
             can_buy = True
-
-            ##BADD##
-            self.signals.append(2)
-
+            l = 0
             while can_buy:
                 for i in buy_index:
                     if self.cash_in_hand > self.stock_price[i]:
+                        if(l == 0):
+                            self.signals.append(2)
+                        l += 1
                         self.stock_owned[i] += 1  # buy one share
                         self.cash_in_hand -= self.stock_price[i]
                         self.enter_price[i] = self.stock_price[i]
                     else:
                         can_buy = False
+
             ##BADD##
-            return
+            if(l != 0):
+                return
         ##BADD##
         self.signals.append(1)
