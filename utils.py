@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from stockstats import StockDataFrame as Sdf
 import matplotlib.pyplot as plt
 
@@ -87,7 +87,7 @@ def get_scaler(env, max_profit_factor):
     low.append(-env.init_invest)
     high.append(max_cash)
 
-    scaler = StandardScaler()  # MinMaxScaler or RobustScaler
+    scaler = MinMaxScaler((-1, 1)) #or RobustScaler
     scaler.fit([low, high])
 
     print("Scaler is {}".format(scaler))

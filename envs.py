@@ -4,6 +4,10 @@ from gym.utils import seeding
 import numpy as np
 import itertools
 
+kSELLING = 0
+kHOLDING = 1
+kBUYING = 2
+
 
 class TradingEnv(gym.Env):
     """
@@ -129,52 +133,27 @@ class TradingEnv(gym.Env):
         return np.sum(self.stock_owned * self.stock_price) + self.cash_in_hand
 
     def _trade(self, action):
-        # all combo to sell(0), hold(1), or buy(2) stocks
-        action_combo = list(itertools.product([0, 1, 2], repeat=self.n_stock))
-        action_vec = action_combo[action]
-
-        # one pass to get sell/buy index
-        sell_index = []
-        buy_index = []
-        for i, a in enumerate(action_vec):
-            if a == 0:
-                sell_index.append(i)
-            elif a == 2:
-                buy_index.append(i)
-
-        # two passes: sell first, then buy; might be naive in real-world settings
-        if sell_index:
-            for i in sell_index:
-                if(self.stock_owned[i] == 0):
-                    continue
-                ##BADD##
-                self.signals.append(0)
-                self.trade_count += 1
-                self.cash_in_hand += self.stock_price[i] * self.stock_owned[i]
-                profit = self.stock_price[i] - self.enter_price[i]
-                self.profit += profit * self.stock_owned[i]
-                if profit > 0:
-                    self.trades_profitable += 1
-                self.enter_price[i] = 0
-                self.stock_owned[i] = 0
-
-        if buy_index:
-            can_buy = True
-            l = 0
-            while can_buy:
-                for i in buy_index:
-                    if self.cash_in_hand > self.stock_price[i]:
-                        if(l == 0):
-                            self.signals.append(2)
-                        l += 1
-                        self.stock_owned[i] += 1  # buy one share
-                        self.cash_in_hand -= self.stock_price[i]
-                        self.enter_price[i] = self.stock_price[i]
-                    else:
-                        can_buy = False
-
-            ##BADD##
-            if(l != 0):
+        if(action == 0):
+            if(self.stock_owned[0] == 0):
+                self.signals.append(kHOLDING)
                 return
-        ##BADD##
-        self.signals.append(1)
+            self.trade_count += 1
+            self.cash_in_hand += self.stock_price[0] * self.stock_owned[0]
+            curr_profit = self.stock_price[0] - self.enter_price[0]
+            self.profit += curr_profit * self.stock_owned[0]
+            if(curr_profit > 0):
+                self.trades_profitable += 1
+            self.enter_price[0] = 0
+            self.stock_owned[0] = 0
+
+        # buy
+        elif(action == 2):
+            if(self.cash_in_hand < self.stock_price[0]):
+                self.signals.append(kHOLDING)
+                return
+            num_to_purchase = self.cash_in_hand // self.stock_price[0]
+            self.stock_owned[0] += num_to_purchase
+            self.cash_in_hand -= num_to_purchase * self.stock_price[0]
+            self.enter_price[0] = self.stock_price[0]
+
+        self.signals.append(action)
