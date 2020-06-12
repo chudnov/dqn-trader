@@ -13,8 +13,8 @@ class TradingEnv(gym.Env):
     """
     A x-stock trading environment.
 
-    State: [current stock prices, indicators for stock price, profit]
-      - array of length n_stock * (num indicators + 1) + 1
+    State: [indicators for stock price, profit]
+      - array of length n_stock * num indicators + 1
       - price is discretized (to integer) to reduce state space
       - use close price for each stock
       - cash in hand is evaluated at each step based on action performed
@@ -60,13 +60,11 @@ class TradingEnv(gym.Env):
         self.action_space = spaces.Discrete(3**self.n_stock)
 
         # observation space: give estimates in order to sample and build scaler
-        stock_max_price = self.stock_price_history.max(axis=1)
-        price_range = [[0, mx] for mx in stock_max_price]
         indicator_range = [[list(indicators_min[i])[j], list(indicators_max[i])[j]] for i in range(
             0, len(indicators_max)) for j in range(len(list(indicators_min[i])))]
         profit_range = [[-init_invest, init_invest * max_profit_factor]]
         self.observation_space = spaces.MultiDiscrete(
-            price_range + indicator_range + profit_range)
+            indicator_range + profit_range)
 
         # seed and start
         self._seed()
@@ -124,7 +122,6 @@ class TradingEnv(gym.Env):
 
     def _get_obs(self):
         obs = []
-        obs.extend(list(self.stock_price))
         obs.extend(list(self.indicators.flatten()))
         obs.append(self.profit)
         return obs

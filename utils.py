@@ -70,16 +70,11 @@ def get_scaler(env, max_profit_factor):
     low = []
     high = []
 
-    max_price = env.stock_price_history.max(axis=1)
-
     indicators_max = env.stock_indicators_history.max(axis=1)
     indicators_min = env.stock_indicators_history.min(axis=1)
 
     max_cash = env.init_invest * max_profit_factor
 
-    for i in max_price:
-        low.append(0)
-        high.append(i)
     for i in range(0, len(indicators_max)):
         low.extend(list(indicators_min[i]))
         high.extend(list(indicators_max[i]))
