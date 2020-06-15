@@ -82,7 +82,7 @@ def get_scaler(env, max_profit_factor):
     low.append(-env.init_invest)
     high.append(max_cash)
 
-    scaler = MinMaxScaler((-1, 1)) #or RobustScaler
+    scaler = MinMaxScaler((0.1, 1)) #or RobustScaler
     scaler.fit([low, high])
 
     print("Scaler is {}".format(scaler))
