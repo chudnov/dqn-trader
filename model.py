@@ -20,5 +20,4 @@ def mlp(n_obs, n_action, n_hidden_layer=2, n_neuron_per_layer=24,
                              output_shape=(nb_action,))(y)  #  Using the max dueling type
   model = Model(inputs=model.input, outputs=outputlayer)
   model.compile(loss=loss, optimizer=Adam(lr=learning_rate))
-  print(model.summary())
   return model

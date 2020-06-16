@@ -4,17 +4,13 @@ from gym.utils import seeding
 import numpy as np
 import itertools
 
-kSELLING = 0
-kHOLDING = 1
-kBUYING = 2
-
 
 class TradingEnv(gym.Env):
     """
     A x-stock trading environment.
 
     State: [indicators for stock price, profit]
-      - array of length n_stock * num indicators + 1
+      - array of length num indicators + 1
       - price is discretized (to integer) to reduce state space
       - use close price for each stock
       - cash in hand is evaluated at each step based on action performed
@@ -25,14 +21,11 @@ class TradingEnv(gym.Env):
       - if buying multiple stock, equally distribute cash in hand and then utilize the balance
     """
 
-    def __init__(self, train_data, max_profit_factor, init_invest=20000):
+    def __init__(self, train_data, init_invest):
         # data
-        self.stock_price_history = train_data[:, :, 0]
-        self.stock_indicators_history = train_data[:, :, 2:]
-        self.n_stock, self.n_step = self.stock_price_history.shape
-
-        indicators_max = self.stock_indicators_history.max(axis=1)
-        indicators_min = self.stock_indicators_history.min(axis=1)
+        self.stock_price_history = train_data[:, 0]
+        self.stock_indicators_history = train_data[:, 2:]
+        self.n_step = self.stock_price_history.shape[0]
 
         self.signals = None
 
@@ -57,14 +50,9 @@ class TradingEnv(gym.Env):
         self.account_balance_unrealised = None
 
         # action space
-        self.action_space = spaces.Discrete(3**self.n_stock)
-
-        # observation space: give estimates in order to sample and build scaler
-        indicator_range = [[list(indicators_min[i])[j], list(indicators_max[i])[j]] for i in range(
-            0, len(indicators_max)) for j in range(len(list(indicators_min[i])))]
-        profit_range = [[-init_invest, init_invest * max_profit_factor]]
-        self.observation_space = spaces.MultiDiscrete(
-            indicator_range + profit_range)
+        self.action_space = 3
+        # state space
+        self.observation_space = self.stock_indicators_history.shape[1] + 1
 
         # seed and start
         self._seed()
@@ -93,10 +81,10 @@ class TradingEnv(gym.Env):
     def _reset(self):
         self.signals = []
         self.cur_step = 0
-        self.enter_price = [0] * self.n_stock
-        self.stock_owned = [0] * self.n_stock
-        self.stock_price = self.stock_price_history[:, self.cur_step]
-        self.indicators = self.stock_indicators_history[:, self.cur_step, :]
+        self.enter_price = 0
+        self.stock_owned = 0
+        self.stock_price = self.stock_price_history[self.cur_step]
+        self.indicators = self.stock_indicators_history[self.cur_step, :]
         self.cash_in_hand = self.init_invest
         self.profit = 0
 
@@ -107,13 +95,12 @@ class TradingEnv(gym.Env):
         return self._get_obs()
 
     def _step(self, action):
-        assert self.action_space.contains(action)
         prev_val = self._get_val()  # self.cash_in_hand for realized pnl
         self.cur_step += 1
         # update price
-        self.stock_price = self.stock_price_history[:, self.cur_step]
+        self.stock_price = self.stock_price_history[self.cur_step]
         # update indicators
-        self.indicators = self.stock_indicators_history[:, self.cur_step, :]
+        self.indicators = self.stock_indicators_history[self.cur_step, :]
         self._trade(action)
         cur_val = self._get_val()  # self.cash_in_hand for realized pnl
         reward = cur_val - prev_val
@@ -122,35 +109,35 @@ class TradingEnv(gym.Env):
 
     def _get_obs(self):
         obs = []
-        obs.extend(list(self.indicators.flatten()))
+        obs.extend(list(self.indicators))
         obs.append(self.profit)
         return obs
 
     def _get_val(self):
-        return np.sum(self.stock_owned * self.stock_price) + self.cash_in_hand
+        return self.stock_owned * self.stock_price + self.cash_in_hand
 
     def _trade(self, action):
         if(action == 0):
-            if(self.stock_owned[0] == 0):
-                self.signals.append(kHOLDING)
+            if(self.stock_owned == 0):
+                self.signals.append(1)
                 return
             self.trade_count += 1
-            self.cash_in_hand += self.stock_price[0] * self.stock_owned[0]
-            curr_profit = self.stock_price[0] - self.enter_price[0]
-            self.profit += curr_profit * self.stock_owned[0]
+            self.cash_in_hand += self.stock_price * self.stock_owned
+            curr_profit = self.stock_price - self.enter_price
+            self.profit += curr_profit * self.stock_owned
             if(curr_profit > 0):
                 self.trades_profitable += 1
-            self.enter_price[0] = 0
-            self.stock_owned[0] = 0
+            self.enter_price = 0
+            self.stock_owned = 0
 
         # buy
         elif(action == 2):
-            if(self.cash_in_hand < self.stock_price[0]):
-                self.signals.append(kHOLDING)
+            if(self.cash_in_hand < self.stock_price):
+                self.signals.append(1)
                 return
-            num_to_purchase = self.cash_in_hand // self.stock_price[0]
-            self.stock_owned[0] += num_to_purchase
-            self.cash_in_hand -= num_to_purchase * self.stock_price[0]
-            self.enter_price[0] = self.stock_price[0]
+            num_to_purchase = self.cash_in_hand // self.stock_price
+            self.stock_owned += num_to_purchase
+            self.cash_in_hand -= num_to_purchase * self.stock_price
+            self.enter_price = self.stock_price
 
         self.signals.append(action)

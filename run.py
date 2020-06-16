@@ -3,13 +3,14 @@ import time
 import numpy as np
 import argparse
 import re
-
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from stockstats import StockDataFrame as Sdf
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from envs import TradingEnv
 from agent import DQNAgent
-from utils import get_split_data, get_scaler, maybe_make_dir, view_signals
+from utils import get_split_data, maybe_make_dir, view_signals
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -23,8 +24,12 @@ if __name__ == '__main__':
                         help='"train", "validate", or "test"', choices=['train', 'validate', 'test'])
     parser.add_argument('-w', '--weights', type=str,
                         help='a trained model weights')
+    parser.add_argument('-s', '--scaler', type=str,
+                        help='scaler data')
     parser.add_argument('-r', '--ratio', type=int, default=70,
                         help='% of data for train')
+    parser.add_argument('--symbol', type=str,
+                        help='symbol of stock')
     parser.add_argument('-l', '--layers', type=int, default=2,
                         help='number of hidden layers')
     parser.add_argument('-n', '--neurons', type=int, default=24,
@@ -34,28 +39,38 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # Set up dirs
     maybe_make_dir('weights')
     maybe_make_dir('portfolio_val')
+    maybe_make_dir('scalers')
 
+    # Get time
     timestamp = time.strftime('%Y%m%d%H%M')
 
-    data_split = get_split_data(ratio, detrend)
+    # Get data split
+    data_split = get_split_data(args.symbol, args.ratio, args.detrend)
 
-    # Profit Factor CONST
-    MAX_PROFIT_FACTOR = 4
+    if(args.mode == 'train'):
+        scaler = MinMaxScaler((0.1, 1))
+        data_split[args.mode] = scaler.fit_transform(data_split[args.mode])
+        # save scaler to disk
+        with open('scalers/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
+            pickle.dump(scaler, fp)
+            print("Saved scaler in {}".format(fp))
+    else:
+        # load scaler
+        scaler = pickle.load(open(args.scaler, 'rb'))
+        data_split[args.mode] = scaler.fit_transform(data_split[args.mode])
 
-    env = TradingEnv(data_split[args.mode], MAX_PROFIT_FACTOR, args.initial_invest)
-    state_size = env.observation_space.shape
-    action_size = env.action_space.n
+    env = TradingEnv(data_split[args.mode], args.initial_invest)
+    # Size of state space and action space
+    state_size = env.observation_space
+    action_size = env.action_space
     agent = DQNAgent(state_size, action_size,
-                     args.layers, args.neurons, batch_size = args.batch_size, epsilon=1 if args.mode == "train" else 0)
+                     args.layers, args.neurons, batch_size=args.batch_size, epsilon=1 if args.mode == "train" else 0)
 
-    scaler = get_scaler(env, MAX_PROFIT_FACTOR)
-
-    portfolio_value = []
-
-    # Append initial account value
-    portfolio_value.append(args.initial_invest)
+    # Store portfolio value after iterations
+    portfolio_value = [args.initial_invest]
 
     if args.mode != 'train':
         # load trained weights
@@ -65,13 +80,9 @@ if __name__ == '__main__':
 
     for e in range(args.episode):
         state = env.reset()
-
-        state = scaler.transform([state])
-
         for time in range(env.n_step):
             action = agent.act(state)
             next_state, reward, done = env.step(action)
-            next_state = scaler.transform([next_state])
             if args.mode == 'train':
                 agent.remember(state, action, reward, next_state, done)
             state = next_state
@@ -93,19 +104,4 @@ if __name__ == '__main__':
         print("Saved episode values in {}".format(fp))
 
     if(args.mode != 'train'):
-        data = np.array([d for d in get_data(args.detrend)])
-        train_data = np.array([d[:end_row_train, :] for d in data])
-        test_data = np.array([d[end_row_validate:, :] for d in data])
-        validation_data = np.array(
-            [d[end_row_train:end_row_validate, :] for d in data])
-        # if(args.mode == 'train'):
-        #    view_signals(train_data, env.signals)
-        # else:
-        view_signals(validation_data if args.mode ==
-                     'validate' else test_data, env.signals)
-'''
-	# save signal history to dick 
-	with open('signals/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
-	    pickle.dump(signals, fp)
-	    print("Saved signals in {}".format(fp))
-'''
+        view_signals(data_split[args.mode], env.signals)

@@ -27,7 +27,7 @@ class DQNAgent(object):
     def act(self, state):
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
-        act_values = self.model.predict(state)
+        act_values = self.model.predict(np.array([state]))
         return np.argmax(act_values[0])  # returns action
 
     def update_target_model(self):
@@ -37,15 +37,17 @@ class DQNAgent(object):
         self.step += 1
 
         """ vectorized implementation; 30x speed up compared with for loop """
-        minibatch = random.sample(self.memory, self.batch_size)
+        minibatch = np.array(random.sample(self.memory, self.batch_size))
 
-        states = np.array([tup[0][0] for tup in minibatch])
+        states = np.concatenate(minibatch[:, 0]).reshape(
+            self.batch_size, self.state_size)
         actions = np.array([tup[1] for tup in minibatch])
         rewards = np.array([tup[2] for tup in minibatch])
-        next_states = np.array([tup[3][0] for tup in minibatch])
+        next_states = np.concatenate(minibatch[:, 3]).reshape(
+            self.batch_size, self.state_size)
         done = np.array([tup[4] for tup in minibatch])
-
-        # Q(s', a)
+        
+	# Q(s', a)
         target = rewards + self.gamma * self.model_sub.predict(next_states)[range(
             self.batch_size), np.argmax(self.model.predict(next_states), axis=1)]
         # end state target is reward itself (no lookahead)
