@@ -10,7 +10,7 @@ import pandas as pd
 
 from envs import TradingEnv
 from agent import DQNAgent
-from utils import get_split_data, maybe_make_dir, view_signals
+from utils import fit, get_split_data, maybe_make_dir, view_signals
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -44,39 +44,27 @@ if __name__ == '__main__':
     maybe_make_dir('portfolio_val')
     maybe_make_dir('scalers')
 
-    # Get time
-    timestamp = time.strftime('%Y%m%d%H%M')
+    # Get time. Same as when it was trained if we are validating/testing
+    timestamp = time.strftime('%Y%m%d%H%M') if args.mode == 'train' else re.findall(r'\d{12}', args.weights)[0]
 
     # Get data split
     data_split = get_split_data(args.symbol, args.ratio, args.detrend)
 
-    if(args.mode == 'train'):
-        scaler = MinMaxScaler((0.1, 1))
-        data_split[args.mode] = scaler.fit_transform(data_split[args.mode])
-        # save scaler to disk
-        with open('scalers/{}-{}.p'.format(timestamp, args.mode), 'wb') as fp:
-            pickle.dump(scaler, fp)
-            print("Saved scaler in {}".format(fp))
-    else:
-        # load scaler
-        scaler = pickle.load(open(args.scaler, 'rb'))
-        data_split[args.mode] = scaler.fit_transform(data_split[args.mode])
+    # Fit data
+    fit(data_split, args.mode)
 
+    # Create environment
     env = TradingEnv(data_split[args.mode], args.initial_invest)
-    # Size of state space and action space
-    state_size = env.observation_space
-    action_size = env.action_space
-    agent = DQNAgent(state_size, action_size,
+    
+    # Create agent
+    agent = DQNAgent(env.observation_space, env.action_space,
                      args.layers, args.neurons, batch_size=args.batch_size, epsilon=1 if args.mode == "train" else 0)
 
     # Store portfolio value after iterations
     portfolio_value = [args.initial_invest]
 
-    if args.mode != 'train':
-        # load trained weights
-        agent.load(args.weights)
-        # when validate, the timestamp is same as time when weights was trained
-        timestamp = re.findall(r'\d{12}', args.weights)[0]
+    # Load weights if not training
+    if args.mode != 'train': agent.load(args.weights)
 
     for e in range(args.episode):
         state = env.reset()
