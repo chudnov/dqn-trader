@@ -9,7 +9,7 @@ import pandas as pd
 
 from envs import TradingEnv
 from agent import DQNAgent
-from utils import get_data, get_scaler, maybe_make_dir, view_signals
+from utils import get_split_data, get_scaler, maybe_make_dir, view_signals
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--initial_invest', type=int, default=20000,
                         help='initial investment amount')
     parser.add_argument('-m', '--mode', type=str, required=True,
-                        help='"train", "validate", or "test"')
+                        help='"train", "validate", or "test"', choices=['train', 'validate', 'test'])
     parser.add_argument('-w', '--weights', type=str,
                         help='a trained model weights')
     parser.add_argument('-r', '--ratio', type=int, default=70,
@@ -34,33 +34,21 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.mode not in ['train', 'validate', 'test']:
-        quit()
-
     maybe_make_dir('weights')
     maybe_make_dir('portfolio_val')
 
     timestamp = time.strftime('%Y%m%d%H%M')
 
-    data = np.array([np.around(d) for d in get_data(args.detrend)])
-
-    data_size = data[0].shape[0]
-    end_row_train = (int)(data_size * (args.ratio / 100))
-    end_row_validate = (data_size - end_row_train)//2 + end_row_train
-
-    train_data = np.array([d[:end_row_train, :] for d in data])
-    validation_data = np.array(
-        [d[end_row_train:end_row_validate, :] for d in data])
-    test_data = np.array([d[end_row_validate:, :] for d in data])
+    data_split = get_split_data(ratio, detrend)
 
     # Profit Factor CONST
     MAX_PROFIT_FACTOR = 4
 
-    env = TradingEnv(train_data, MAX_PROFIT_FACTOR, args.initial_invest)
+    env = TradingEnv(data_split[args.mode], MAX_PROFIT_FACTOR, args.initial_invest)
     state_size = env.observation_space.shape
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size,
-                     args.layers, args.neurons, epsilon=1 if args.mode == "train" else 0)
+                     args.layers, args.neurons, batch_size = args.batch_size, epsilon=1 if args.mode == "train" else 0)
 
     scaler = get_scaler(env, MAX_PROFIT_FACTOR)
 
@@ -70,9 +58,6 @@ if __name__ == '__main__':
     portfolio_value.append(args.initial_invest)
 
     if args.mode != 'train':
-        # remake the env with validation data
-        d = validation_data if args.mode == 'validate' else test_data
-        env = TradingEnv(d, MAX_PROFIT_FACTOR, args.initial_invest)
         # load trained weights
         agent.load(args.weights)
         # when validate, the timestamp is same as time when weights was trained
@@ -98,7 +83,7 @@ if __name__ == '__main__':
                 portfolio_value.append(unrealized)
                 break
             if args.mode == 'train' and len(agent.memory) > args.batch_size:
-                agent.replay(args.batch_size)
+                agent.replay()
         if args.mode == 'train' and (e + 1) % 10 == 0:  # checkpoint weights
             agent.save('weights/{}-dqn.h5'.format(timestamp))
 

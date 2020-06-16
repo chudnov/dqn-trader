@@ -88,7 +88,20 @@ def get_scaler(env, max_profit_factor):
     print("Scaler is {}".format(scaler))
     return scaler
 
+def get_split_data(ratio, detrend):
+    data = np.array([np.around(d) for d in get_data(detrend)])
 
+    data_size = data[0].shape[0]
+    end_row_train = (int)(data_size * (ratio / 100))
+    end_row_validate = (data_size - end_row_train)//2 + end_row_train
+
+    data_split = {}
+    data_split["train"] = np.array([d[:end_row_train, :] for d in data])
+    data_split["validation"] = np.array([d[end_row_train:end_row_validate, :] for d in data])
+    data_split["test"] = np.array([d[end_row_validate:, :] for d in data])
+
+    return data_split
+ 
 def detrend(df):
     del df[df.columns[0]]
     new_df = df.diff(periods=1).iloc[1:]
