@@ -7,7 +7,7 @@ from model import mlp
 class DQNAgent(object):
     """ A simple Deep Q agent """
 
-    def __init__(self, state_size, action_size, num_layers, num_neurons, update_target_freq=100, batch_size=64, memory_size=2000, gamma=0.95, epsilon=1.0, epsilon_min=.01, epsilon_decay=0.995):
+    def __init__(self, state_size, action_size, num_layers, num_neurons, memory_size, update_target_freq=100, batch_size=64, gamma=0.95, epsilon=1.0, epsilon_min=.01, epsilon_decay=0.995):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=memory_size)
@@ -46,8 +46,16 @@ class DQNAgent(object):
         next_states = np.concatenate(minibatch[:, 3]).reshape(
             self.batch_size, self.state_size)
         done = np.array([tup[4] for tup in minibatch])
-        
-	# Q(s', a)
+
+        '''
+        print("states are {}".format(states))
+        print("actions are {}".format(actions))
+        print("rewards are {}".format(rewards))
+        print("next states are {}".format(next_states))
+        print("done is {}".format(done))
+        '''
+
+        # Q(s', a)
         target = rewards + self.gamma * self.model_sub.predict(next_states)[range(
             self.batch_size), np.argmax(self.model.predict(next_states), axis=1)]
         # end state target is reward itself (no lookahead)

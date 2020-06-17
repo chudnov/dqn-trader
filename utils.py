@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from stockstats import StockDataFrame as Sdf
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+import pickle
 
 # Remove chaining warning
 pd.options.mode.chained_assignment = None
@@ -63,10 +65,10 @@ def get_split_data(stock_symbol, ratio, detrend):
     data_split["test"] = data[end_row_validate:]
     return data_split
 
-def fit(data_split, mode):	
+def fit(data_split, mode, timestamp):	
     if(mode == 'train'):
         scaler = MinMaxScaler((0.1, 1))
-        data_split[mode] = scaler.fit_transform(data_split[args.mode])
+        data_split[mode] = scaler.fit_transform(data_split[mode])
         # save scaler to disk
         with open('scalers/{}-{}.p'.format(timestamp, mode), 'wb') as fp:
             pickle.dump(scaler, fp)
@@ -74,7 +76,7 @@ def fit(data_split, mode):
     else:
         # load scaler
         scaler = pickle.load(open(args.scaler, 'rb'))
-	data_split[mode] = scaler.fit_transform(data_split[mode])
+        data_split[mode] = scaler.fit_transform(data_split[mode])
 
 def detrend(df):
     del df[df.columns[0]]

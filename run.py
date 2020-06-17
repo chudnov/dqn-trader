@@ -3,7 +3,6 @@ import time
 import numpy as np
 import argparse
 import re
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from stockstats import StockDataFrame as Sdf
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -36,6 +35,8 @@ if __name__ == '__main__':
                         help='number of neurons layers')
     parser.add_argument('-d', '--detrend', type=bool, default=False,
                         help='detrend or not')
+    parser.add_argument('--mem', type=int, default=2000,
+                        help='memory size of agent')
 
     args = parser.parse_args()
 
@@ -45,26 +46,36 @@ if __name__ == '__main__':
     maybe_make_dir('scalers')
 
     # Get time. Same as when it was trained if we are validating/testing
-    timestamp = time.strftime('%Y%m%d%H%M') if args.mode == 'train' else re.findall(r'\d{12}', args.weights)[0]
+    timestamp = time.strftime('%Y%m%d%H%M') if args.mode == 'train' else re.findall(
+        r'\d{12}', args.weights)[0]
 
     # Get data split
     data_split = get_split_data(args.symbol, args.ratio, args.detrend)
 
     # Fit data
-    fit(data_split, args.mode)
+    fit(data_split, args.mode, timestamp)
 
     # Create environment
     env = TradingEnv(data_split[args.mode], args.initial_invest)
-    
+
     # Create agent
     agent = DQNAgent(env.observation_space, env.action_space,
-                     args.layers, args.neurons, batch_size=args.batch_size, epsilon=1 if args.mode == "train" else 0)
+                     args.layers, args.neurons, args.mem, batch_size=args.batch_size, epsilon=1 if args.mode == "train" else 0)
 
     # Store portfolio value after iterations
     portfolio_value = [args.initial_invest]
 
     # Load weights if not training
-    if args.mode != 'train': agent.load(args.weights)
+    if args.mode != 'train':
+        agent.load(args.weights)
+
+    # Warm up the agent
+    if(args.mode == 'train'):
+        state = env.reset()
+        for _ in range(args.mem):
+            action = agent.act(state)
+            next_state, reward, done = env.step(action)
+            agent.remember(state, action, reward, next_state, done)
 
     for e in range(args.episode):
         state = env.reset()
