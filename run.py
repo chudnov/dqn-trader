@@ -53,7 +53,7 @@ if __name__ == '__main__':
     data_split = get_split_data(args.symbol, args.ratio, args.detrend)
 
     # Fit data
-    fit(data_split, args.mode, timestamp)
+    fit(data_split, args.mode, timestamp, args.scaler)
 
     # Create environment
     env = TradingEnv(data_split[args.mode], args.initial_invest)

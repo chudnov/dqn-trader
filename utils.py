@@ -65,7 +65,7 @@ def get_split_data(stock_symbol, ratio, detrend):
     data_split["test"] = data[end_row_validate:]
     return data_split
 
-def fit(data_split, mode, timestamp):	
+def fit(data_split, mode, timestamp, scaler):	
     if(mode == 'train'):
         scaler = MinMaxScaler((0.1, 1))
         data_split[mode] = scaler.fit_transform(data_split[mode])
@@ -75,7 +75,7 @@ def fit(data_split, mode, timestamp):
             print("Saved scaler in {}".format(fp))
     else:
         # load scaler
-        scaler = pickle.load(open(args.scaler, 'rb'))
+        scaler = pickle.load(open(scaler, 'rb'))
         data_split[mode] = scaler.fit_transform(data_split[mode])
 
 def detrend(df):
