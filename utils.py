@@ -61,7 +61,7 @@ def get_split_data(stock_symbol, ratio, detrend):
 
     data_split = {}
     data_split["train"] = data[:end_row_train]
-    data_split["validation"] = data[end_row_train:end_row_validate]
+    data_split["validate"] = data[end_row_train:end_row_validate]
     data_split["test"] = data[end_row_validate:]
     return data_split
 
