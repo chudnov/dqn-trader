@@ -8,6 +8,7 @@ A stock trader powered with deep q-network.
 
 Python 3. To install all the libraries, run `pip3 install -r requirements.txt`
 
+Additionally, you must run `brew install ta-lib` for ta-lib.
 
 ### Table of content
 

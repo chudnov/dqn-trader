@@ -7,7 +7,7 @@ from model import mlp
 class DQNAgent(object):
     """ A simple Deep Q agent """
 
-    def __init__(self, state_size, action_size, num_layers, num_neurons, memory_size, update_target_freq=100, batch_size=64, gamma=0.95, epsilon=1.0, epsilon_min=.01, epsilon_decay=0.995):
+    def __init__(self, state_size, action_size, num_layers, num_neurons, mode, memory_size, update_target_freq, dqn_type, batch_size=64, gamma=0.95, epsilon=1.0, epsilon_min=.01, epsilon_decay=0.995):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=memory_size)
@@ -18,14 +18,18 @@ class DQNAgent(object):
         self.update_target_freq = update_target_freq
         self.batch_size = batch_size
         self.step = 0
-        self.model = mlp(state_size, action_size, num_layers, num_neurons)
-        self.model_sub = mlp(state_size, action_size, num_layers, num_neurons)
+        self.dqn_type = dqn_type
+        self.model = mlp(state_size, action_size, num_layers,
+                         num_neurons, dqn_type=self.dqn_type)
+        self.model_sub = mlp(state_size, action_size,
+                             num_layers, num_neurons, dqn_type=self.dqn_type)
+        self.mode = mode
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
-        if np.random.rand() <= self.epsilon:
+        if self.mode == "train" and np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         act_values = self.model.predict(np.array([state]))
         return np.argmax(act_values[0])  # returns action
@@ -47,17 +51,14 @@ class DQNAgent(object):
             self.batch_size, self.state_size)
         done = np.array([tup[4] for tup in minibatch])
 
-        '''
-        print("states are {}".format(states))
-        print("actions are {}".format(actions))
-        print("rewards are {}".format(rewards))
-        print("next states are {}".format(next_states))
-        print("done is {}".format(done))
-        '''
+        normal_dqn = np.amax(self.model.predict(next_states), axis=1)
+        double_dqn = self.model_sub.predict(next_states)[range(
+            self.batch_size), np.argmax(self.model.predict(next_states), axis=1)]
+
+        future_r = normal_dqn if self.dqn_type == 0 else double_dqn
 
         # Q(s', a)
-        target = rewards + self.gamma * self.model_sub.predict(next_states)[range(
-            self.batch_size), np.argmax(self.model.predict(next_states), axis=1)]
+        target = rewards + self.gamma * future_r
         # end state target is reward itself (no lookahead)
         target[done] = rewards[done]
 
@@ -66,7 +67,7 @@ class DQNAgent(object):
         # make the agent to approximately map the current state to future discounted reward
         target_f[range(self.batch_size), actions] = target
 
-        if(self.step % self.update_target_freq == 0):
+        if(self.step % self.update_target_freq == 0 and self.dqn_type != 0):
             self.update_target_model()
 
         self.model.fit(states, target_f, epochs=1, verbose=0)

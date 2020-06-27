@@ -3,28 +3,24 @@ from gym import spaces
 from gym.utils import seeding
 import numpy as np
 import itertools
-
+from utils import sharpe_ratio
 
 class TradingEnv(gym.Env):
     """
-    A x-stock trading environment.
+    A 1-stock trading environment.
 
-    State: [indicators for stock price, profit]
-      - array of length num indicators + 1
-      - price is discretized (to integer) to reduce state space
-      - use close price for each stock
-      - cash in hand is evaluated at each step based on action performed
-
+    State: [indicators for stock price, cash in hand, sharpe ratio]
+    
     Action: sell (0), hold (1), and buy (2)
       - when selling, sell all the shares
       - when buying, buy as many as cash in hand allows
       - if buying multiple stock, equally distribute cash in hand and then utilize the balance
     """
 
-    def __init__(self, train_data, init_invest):
+    def __init__(self, train_data, init_invest, slippage_rate=0.001):
         # data
-        self.stock_price_history = train_data[:, 0]
-        self.stock_indicators_history = train_data[:, 2:]
+        self.stock_price_history = train_data[0]
+        self.stock_indicators_history = train_data[1]
         self.n_step = self.stock_price_history.shape[0]
 
         self.signals = None
@@ -36,6 +32,9 @@ class TradingEnv(gym.Env):
         self.stock_price = None
         self.stock_owned = None
         self.indicators = None
+        self.returns = None
+
+        self.slippage_rate = slippage_rate
 
         # Trading statistics
         # number of completed trades
@@ -48,11 +47,11 @@ class TradingEnv(gym.Env):
         self.profit = None
         # Balance from completed and open trades
         self.account_balance_unrealised = None
-
+ 
         # action space
         self.action_space = 3
         # state space
-        self.observation_space = self.stock_indicators_history.shape[1] + 1
+        self.observation_space = self.stock_indicators_history.shape[1] + 2
 
         # seed and start
         self._seed()
@@ -70,7 +69,7 @@ class TradingEnv(gym.Env):
         return {
             'trade_count': self.trade_count,
             'win_loss_ratio': win_loss_ratio,
-            'account_balance': self.cash_in_hand,
+            'sharpe_ratio': sharpe_ratio(self.returns),
             'unrealised_pl': self._get_val(),
         }
 
@@ -80,6 +79,7 @@ class TradingEnv(gym.Env):
 
     def _reset(self):
         self.signals = []
+        self.returns = []
         self.cur_step = 0
         self.enter_price = 0
         self.stock_owned = 0
@@ -95,49 +95,64 @@ class TradingEnv(gym.Env):
         return self._get_obs()
 
     def _step(self, action):
-        prev_val = self._get_val()  # self.cash_in_hand for realized pnl
+        prev_val = self._get_val()
+        self._trade(action)
         self.cur_step += 1
         # update price
         self.stock_price = self.stock_price_history[self.cur_step]
         # update indicators
         self.indicators = self.stock_indicators_history[self.cur_step, :]
-        self._trade(action)
-        cur_val = self._get_val()  # self.cash_in_hand for realized pnl
+        cur_val = self._get_val()  
         reward = cur_val - prev_val
+        self.returns.append(reward) 
         done = self.cur_step == self.n_step - 1
         return self._get_obs(), reward, done
 
     def _get_obs(self):
         obs = []
         obs.extend(list(self.indicators))
-        obs.append(self.profit)
+        obs.append(self.cash_in_hand)
+        obs.append(sharpe_ratio(self.returns))
         return obs
 
     def _get_val(self):
         return self.stock_owned * self.stock_price + self.cash_in_hand
 
     def _trade(self, action):
+        # sell
         if(action == 0):
             if(self.stock_owned == 0):
                 self.signals.append(1)
                 return
             self.trade_count += 1
+            
             self.cash_in_hand += self.stock_price * self.stock_owned
             curr_profit = self.stock_price - self.enter_price
             self.profit += curr_profit * self.stock_owned
+            
+            #self.cash_in_hand += self.stock_price
+            #curr_profit = self.stock_price - self.enter_price
+            #self.profit += curr_profit
+ 
             if(curr_profit > 0):
                 self.trades_profitable += 1
             self.enter_price = 0
             self.stock_owned = 0
+            #self.stock_owned -= 1
 
         # buy
         elif(action == 2):
             if(self.cash_in_hand < self.stock_price):
                 self.signals.append(1)
                 return
+            #self.trade_count += 1
+            
+            self.enter_price = self.stock_price
             num_to_purchase = self.cash_in_hand // self.stock_price
             self.stock_owned += num_to_purchase
             self.cash_in_hand -= num_to_purchase * self.stock_price
-            self.enter_price = self.stock_price
+            
+            #self.stock_owned += 1
+            #self.cash_in_hand -= self.stock_price
 
         self.signals.append(action)

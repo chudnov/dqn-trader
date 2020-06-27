@@ -15,8 +15,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--episode', type=int, default=2000,
                         help='number of episode to run')
-    parser.add_argument('-b', '--batch_size', type=int, default=32,
-                        help='batch size for experience replay')
     parser.add_argument('-i', '--initial_invest', type=int, default=20000,
                         help='initial investment amount')
     parser.add_argument('-m', '--mode', type=str, required=True,
@@ -29,16 +27,16 @@ if __name__ == '__main__':
                         help='% of data for train')
     parser.add_argument('--symbol', type=str,
                         help='symbol of stock')
-    parser.add_argument('-l', '--layers', type=int, default=2,
-                        help='number of hidden layers')
-    parser.add_argument('-n', '--neurons', type=int, default=24,
-                        help='number of neurons layers')
     parser.add_argument('-d', '--detrend', type=bool, default=False,
                         help='detrend or not')
-    parser.add_argument('--mem', type=int, default=2000,
-                        help='memory size of agent')
-
+   
     args = parser.parse_args()
+
+    MEM = 2000
+    BATCH_SIZE = 32
+    # 0 for dqn, 1 for double dqn, 2 for dueling double dqn
+    DQN_TYPE = 2
+    UPDATE_FREQ = 100
 
     # Set up dirs
     maybe_make_dir('weights')
@@ -60,7 +58,7 @@ if __name__ == '__main__':
 
     # Create agent
     agent = DQNAgent(env.observation_space, env.action_space,
-                     args.layers, args.neurons, args.mem, batch_size=args.batch_size, epsilon=1 if args.mode == "train" else 0)
+                     2, 24, args.mode, MEM, UPDATE_FREQ, DQN_TYPE, batch_size=BATCH_SIZE)
 
     # Store portfolio value after iterations
     portfolio_value = [args.initial_invest]
@@ -70,12 +68,14 @@ if __name__ == '__main__':
         agent.load(args.weights)
 
     # Warm up the agent
+    '''
     if(args.mode == 'train'):
         state = env.reset()
-        for _ in range(args.mem):
+        for _ in range(MEM):
             action = agent.act(state)
             next_state, reward, done = env.step(action)
             agent.remember(state, action, reward, next_state, done)
+    '''
 
     for e in range(args.episode):
         state = env.reset()
@@ -86,13 +86,13 @@ if __name__ == '__main__':
                 agent.remember(state, action, reward, next_state, done)
             state = next_state
             if done:
-                count, ratio, bal, unrealized = env._stats().values()
-                print("episode: {}/{}, performed {} trades, {:,.2%} are profitable, with a final episode unrealized pnl of: ${:,.2f}".format(
-                    e + 1, args.episode, count, ratio, unrealized))
+                count, ratio, sharpe, unrealized = env._stats().values()
+                print("episode: {}/{}, performed {} trades, {:,.2%} are profitable, with a sharpe ratio of {} and final episode unrealized pnl of: ${:,.2f}".format(
+                    e + 1, args.episode, count, ratio, sharpe, unrealized))
                 # append episode end portfolio value
                 portfolio_value.append(unrealized)
                 break
-            if args.mode == 'train' and len(agent.memory) > args.batch_size:
+            if args.mode == 'train' and len(agent.memory) > BATCH_SIZE:
                 agent.replay()
         if args.mode == 'train' and (e + 1) % 10 == 0:  # checkpoint weights
             agent.save('weights/{}-dqn.h5'.format(timestamp))

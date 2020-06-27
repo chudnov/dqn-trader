@@ -5,5 +5,5 @@ tensorflow
 sklearn
 h5py
 matplotlib
-stockstats
 gym==0.9.4
+TA-Lib
