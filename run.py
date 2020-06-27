@@ -37,6 +37,7 @@ if __name__ == '__main__':
     # 0 for dqn, 1 for double dqn, 2 for dueling double dqn
     DQN_TYPE = 2
     UPDATE_FREQ = 100
+    EXPLORATION_STOP = 500000   # at this step epsilon will be min    
 
     # Set up dirs
     maybe_make_dir('weights')
@@ -58,7 +59,7 @@ if __name__ == '__main__':
 
     # Create agent
     agent = DQNAgent(env.observation_space, env.action_space,
-                     2, 24, args.mode, MEM, UPDATE_FREQ, DQN_TYPE, batch_size=BATCH_SIZE)
+                     2, 24, args.mode, MEM, UPDATE_FREQ, DQN_TYPE, EXPLORATION_STOP, batch_size=BATCH_SIZE)
 
     # Store portfolio value after iterations
     portfolio_value = [args.initial_invest]

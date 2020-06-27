@@ -2,22 +2,24 @@ from collections import deque
 import random
 import numpy as np
 from model import mlp
-
+import math
 
 class DQNAgent(object):
     """ A simple Deep Q agent """
 
-    def __init__(self, state_size, action_size, num_layers, num_neurons, mode, memory_size, update_target_freq, dqn_type, batch_size=64, gamma=0.95, epsilon=1.0, epsilon_min=.01, epsilon_decay=0.995):
+    def __init__(self, state_size, action_size, num_layers, num_neurons, mode, memory_size, update_target_freq, dqn_type, exploration_stop, batch_size=64, gamma=0.95, epsilon=1.0, epsilon_min=.01):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=memory_size)
         self.gamma = gamma  # discount rate
         self.epsilon = epsilon  # exploration rate
         self.epsilon_min = epsilon_min
-        self.epsilon_decay = epsilon_decay
+        self.epsilon_max = self.epsilon
         self.update_target_freq = update_target_freq
+        self.exploration_stop = exploration_stop
         self.batch_size = batch_size
         self.step = 0
+        self.lamb = - math.log(0.01) / self.exploration_stop  # speed of decay
         self.dqn_type = dqn_type
         self.model = mlp(state_size, action_size, num_layers,
                          num_neurons, dqn_type=self.dqn_type)
@@ -38,8 +40,6 @@ class DQNAgent(object):
         self.model_sub.set_weights(self.model.get_weights())
 
     def replay(self):
-        self.step += 1
-
         """ vectorized implementation; 30x speed up compared with for loop """
         minibatch = np.array(random.sample(self.memory, self.batch_size))
 
@@ -72,8 +72,8 @@ class DQNAgent(object):
 
         self.model.fit(states, target_f, epochs=1, verbose=0)
 
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        self.step += 1
+        self.epsilon = self.epsilon_min + (self.epsilon_max - self.epsilon_min) * math.exp(-self.lamb * self.step) 
 
     def load(self, name):
         self.model.load_weights(name)
