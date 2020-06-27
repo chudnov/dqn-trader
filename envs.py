@@ -111,7 +111,7 @@ class TradingEnv(gym.Env):
     def _get_obs(self):
         obs = []
         obs.extend(list(self.indicators))
-        obs.append(self.cash_in_hand)
+        obs.append(round(self.cash_in_hand/self.init_invest, 2))
         obs.append(sharpe_ratio(self.returns))
         return obs
 

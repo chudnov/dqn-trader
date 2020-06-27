@@ -82,8 +82,9 @@ def detrend(df):
     return new_df
 
 def sharpe_ratio(returns, rf = 0, n = 252):
-    sharpe = (np.mean(returns) - rf + 1E-9) / (np.std(returns) + 1E-9)
-    annualized_sharpe = sharpe * np.sqrt(n)
+    std = np.std(returns)
+    sharpe = (np.mean(returns) - rf) / std if std > 0 else 0
+    annualized_sharpe = round(sharpe * np.sqrt(n), 2)
     return annualized_sharpe
 
 def view_signals(prices, signals):
