@@ -48,7 +48,7 @@ if __name__ == '__main__':
     MEM = 2000
     BATCH_SIZE = 32
     # 0 for dqn, 1 for double dqn, 2 for dueling double dqn
-    DQN_TYPE = 2
+    DQN_TYPE = 1
     UPDATE_FREQ = 100
     EXPLORATION_STOP = 1/3 * args.episode * data_split[args.mode][0].shape[0] # at this step epsilon will be min   
 
@@ -59,8 +59,7 @@ if __name__ == '__main__':
     env = TradingEnv(data_split[args.mode], args.initial_invest)
 
     # Create agent
-    agent = DQNAgent(env.observation_space, env.action_space,
-                     2, 24, args.mode, MEM, UPDATE_FREQ, DQN_TYPE, EXPLORATION_STOP, batch_size=BATCH_SIZE)
+    agent = DQNAgent(env.observation_space, env.action_space, args.mode, MEM, UPDATE_FREQ, DQN_TYPE, EXPLORATION_STOP, batch_size=BATCH_SIZE)
 
     # Store portfolio value after iterations
     portfolio_value = [args.initial_invest]

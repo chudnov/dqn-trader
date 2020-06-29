@@ -65,7 +65,7 @@ def get_split_data(stock_symbol, ratio, detrend):
 
 def fit(data_split, mode, timestamp, scaler):	
     if(mode == 'train'):
-        scaler = MinMaxScaler((0.1, 1))
+        scaler = MinMaxScaler()
         data_split[mode][1] = scaler.fit_transform(data_split[mode][1])
 	# save scaler to disk
         with open('scalers/{}-{}.p'.format(timestamp, mode), 'wb') as fp:

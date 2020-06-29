@@ -7,7 +7,7 @@ import math
 class DQNAgent(object):
     """ A simple Deep Q agent """
 
-    def __init__(self, state_size, action_size, num_layers, num_neurons, mode, memory_size, update_target_freq, dqn_type, exploration_stop, batch_size=64, gamma=0.95, epsilon=1.0, epsilon_min=.01):
+    def __init__(self, state_size, action_size, mode, memory_size, update_target_freq, dqn_type, exploration_stop, batch_size=64, gamma=0.95, epsilon=1.0, epsilon_min=.01):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=memory_size)
@@ -21,10 +21,8 @@ class DQNAgent(object):
         self.step = 0
         self.lamb = - math.log(0.01) / self.exploration_stop  # speed of decay
         self.dqn_type = dqn_type
-        self.model = mlp(state_size, action_size, num_layers,
-                         num_neurons, dqn_type=self.dqn_type)
-        self.model_sub = mlp(state_size, action_size,
-                             num_layers, num_neurons, dqn_type=self.dqn_type)
+        self.model = mlp(state_size, action_size, dqn_type=self.dqn_type)
+        self.model_sub = mlp(state_size, action_size, dqn_type=self.dqn_type)
         self.mode = mode
 
     def remember(self, state, action, reward, next_state, done):
@@ -70,7 +68,7 @@ class DQNAgent(object):
         if(self.step % self.update_target_freq == 0 and self.dqn_type != 0):
             self.update_target_model()
 
-        self.model.fit(states, target_f, epochs=1, verbose=0)
+        self.model.fit(states, target_f, batch_size = self.batch_size, epochs=1, verbose=0)
 
         self.step += 1
         self.epsilon = self.epsilon_min + (self.epsilon_max - self.epsilon_min) * math.exp(-self.lamb * self.step) 
