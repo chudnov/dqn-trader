@@ -31,8 +31,11 @@ class TradingEnv(gym.Env):
         self.enter_price = None
         self.stock_price = None
         self.stock_owned = None
+        self.stock_borrowed = None
         self.indicators = None
         self.returns = None
+        self.current_position = None
+	self.is_short = None
 
         self.slippage_rate = slippage_rate
 
@@ -43,13 +46,9 @@ class TradingEnv(gym.Env):
         self.trades_profitable = None
         # Balance from completed trades
         self.cash_in_hand = None
-        # Total profit
-        self.profit = None
-        # Balance from completed and open trades
-        self.account_balance_unrealised = None
  
         # action space
-        self.action_space = 3
+        self.action_space = 9 # 4 for buy, 1 for hold, 4 for sell but different levels (quarter)
         # state space
         self.observation_space = self.stock_indicators_history.shape[1] + 2
 
@@ -82,15 +81,15 @@ class TradingEnv(gym.Env):
         self.returns = []
         self.cur_step = 0
         self.enter_price = 0
+        self.stock_borrowed = 0
         self.stock_owned = 0
         self.stock_price = self.stock_price_history[self.cur_step]
         self.indicators = self.stock_indicators_history[self.cur_step, :]
         self.cash_in_hand = self.init_invest
-        self.profit = 0
-
+	self.current_position = (self.action_space - 1)/2
         self.trade_count = 0
         self.trades_profitable = 0
-        self.account_balance_unrealised = self.init_invest
+	self.is_short = False
 
         return self._get_obs()
 
@@ -104,6 +103,8 @@ class TradingEnv(gym.Env):
         self.indicators = self.stock_indicators_history[self.cur_step, :]
         cur_val = self._get_val()  
         reward = cur_val - prev_val
+        #if(self.is_short): reward = -reward
+        reward *= (1-slippage_rate) * reward
         self.returns.append(reward) 
         done = self.cur_step == self.n_step - 1
         return self._get_obs(), reward, done
@@ -116,7 +117,7 @@ class TradingEnv(gym.Env):
         return obs
 
     def _get_val(self):
-        return self.stock_owned * self.stock_price + self.cash_in_hand
+        return self.stock_owned * self.stock_price + self.cash_in_hand #if not self.is_short else self.cash_in_hand - self.stock_borrowed * self.stock_price
 
     def _trade(self, action):
         # sell
@@ -128,31 +129,21 @@ class TradingEnv(gym.Env):
             
             self.cash_in_hand += self.stock_price * self.stock_owned
             curr_profit = self.stock_price - self.enter_price
-            self.profit += curr_profit * self.stock_owned
-            
-            #self.cash_in_hand += self.stock_price
-            #curr_profit = self.stock_price - self.enter_price
-            #self.profit += curr_profit
  
             if(curr_profit > 0):
                 self.trades_profitable += 1
             self.enter_price = 0
             self.stock_owned = 0
-            #self.stock_owned -= 1
 
         # buy
         elif(action == 2):
             if(self.cash_in_hand < self.stock_price):
                 self.signals.append(1)
                 return
-            #self.trade_count += 1
-            
-            self.enter_price = self.stock_price
+                       
             num_to_purchase = self.cash_in_hand // self.stock_price
             self.stock_owned += num_to_purchase
             self.cash_in_hand -= num_to_purchase * self.stock_price
-            
-            #self.stock_owned += 1
-            #self.cash_in_hand -= self.stock_price
+            self.enter_price = self.stock_price
 
         self.signals.append(action)

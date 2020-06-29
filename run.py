@@ -32,13 +32,6 @@ if __name__ == '__main__':
    
     args = parser.parse_args()
 
-    MEM = 2000
-    BATCH_SIZE = 32
-    # 0 for dqn, 1 for double dqn, 2 for dueling double dqn
-    DQN_TYPE = 2
-    UPDATE_FREQ = 100
-    EXPLORATION_STOP = 500000   # at this step epsilon will be min    
-
     # Set up dirs
     maybe_make_dir('weights')
     maybe_make_dir('portfolio_val')
@@ -50,6 +43,14 @@ if __name__ == '__main__':
 
     # Get data split
     data_split = get_split_data(args.symbol, args.ratio, args.detrend)
+
+    
+    MEM = 2000
+    BATCH_SIZE = 32
+    # 0 for dqn, 1 for double dqn, 2 for dueling double dqn
+    DQN_TYPE = 2
+    UPDATE_FREQ = 100
+    EXPLORATION_STOP = 1/3 * args.episode * data_split[args.mode][0].shape[0] # at this step epsilon will be min   
 
     # Fit data
     fit(data_split, args.mode, timestamp, args.scaler)
