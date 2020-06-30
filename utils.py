@@ -15,17 +15,17 @@ pd.options.display.max_rows = None
 def get_data(stock_symbol, is_detrend=False):
     """ Returns a n_step array """
     # Data frame w/ open, close, high, low, volume values and reverse
-    df = pd.read_csv('data/{}'.format(stock_symbol + ".csv"))[::-1].reset_index()
+    df = pd.read_csv('data/{}'.format(stock_symbol + ".csv")).reset_index()
 
     #if(is_detrend):
     #    df = detrend(df)
 
     inputs = {
-       'open': df['open'],
-       'high': df['high'],
-       'low':  df['low'],
-       'close': df['close'],
-       'volume': df['volume']
+       'open': df['Open'],
+       'high': df['High'],
+       'low':  df['Low'],
+       'close': df['Close'],
+       'volume': df['Volume']
     }  
 
     t_df = pd.DataFrame()  
