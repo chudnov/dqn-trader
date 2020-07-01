@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import numpy as np
-#from stockstats import StockDataFrame as Sdf
 from talib.abstract import *
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
@@ -54,25 +53,23 @@ def get_split_data(stock_symbol, ratio, detrend):
 
     data_size = data.shape[0]
     end_row_train = (int)(data_size * (ratio / 100))
-    end_row_validate = (data_size - end_row_train)//2 + end_row_train
 
     data_split = {}
     data_split["train"] = [price[:end_row_train], data[:end_row_train]]
-    data_split["validate"] = [price[end_row_train:end_row_validate], data[end_row_train:end_row_validate]]
-    data_split["test"] = [price[end_row_validate:], data[end_row_validate:]]
+    data_split["test"] = [price[end_row_train:], data[end_row_train:]]
     
     return data_split
 
-def fit(data_split, mode, timestamp, scaler):	
+def fit(data_split, mode, symbol):	
     if(mode == 'train'):
-        scaler = MinMaxScaler()
+        scaler = MinMaxScaler((0.1, 1))
         data_split[mode][1] = scaler.fit_transform(data_split[mode][1])
 	# save scaler to disk
-        with open('scalers/{}-{}.p'.format(timestamp, mode), 'wb') as fp:
+        with open('scalers/scaler-{}.p'.format(symbol), 'wb') as fp:
             pickle.dump(scaler, fp)
     else:
         # load scaler
-        scaler = pickle.load(open(scaler, 'rb'))
+        scaler = pickle.load(open('scalers/scaler-{}.p'.format(symbol), 'rb'))
         data_split[mode][1] = scaler.fit_transform(data_split[mode][1])
 
 def detrend(df):
@@ -80,12 +77,6 @@ def detrend(df):
     new_df = df.diff(periods=1).iloc[1:]
     new_df = new_df.add(abs(new_df.min()))
     return new_df
-
-def sharpe_ratio(returns, rf = 0, n = 252):
-    std = np.std(returns)
-    sharpe = (np.mean(returns) - rf) / std if std > 0 else 0
-    annualized_sharpe = round(sharpe * np.sqrt(n), 2)
-    return annualized_sharpe
 
 def view_signals(prices, signals):
     df = pd.DataFrame()

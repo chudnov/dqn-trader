@@ -2,8 +2,8 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 import numpy as np
-import itertools
-from utils import sharpe_ratio
+from empyrical import sharpe_ratio
+import pandas as pd
 
 class TradingEnv(gym.Env):
     """
@@ -34,7 +34,7 @@ class TradingEnv(gym.Env):
         self.stock_borrowed = None
         self.indicators = None
         self.returns = None
-        #self.current_position = None
+        self.current_position = None
         #self.is_short = None
 
         self.slippage_rate = slippage_rate
@@ -48,7 +48,7 @@ class TradingEnv(gym.Env):
         self.cash_in_hand = None
  
         # action space
-        self.action_space = 9 # 4 for buy, 1 for hold, 4 for sell but different levels (quarter)
+        self.action_space = 3 # 4 for buy, 1 for hold, 4 for sell but different levels (quarter)
         # state space
         self.observation_space = self.stock_indicators_history.shape[1] + 2
 
@@ -68,7 +68,7 @@ class TradingEnv(gym.Env):
         return {
             'trade_count': self.trade_count,
             'win_loss_ratio': win_loss_ratio,
-            'sharpe_ratio': sharpe_ratio(self.returns),
+            'sharpe_ratio': self._sharpe(self.returns),
             'unrealised_pl': self._get_val(),
         }
 
@@ -86,7 +86,7 @@ class TradingEnv(gym.Env):
         self.stock_price = self.stock_price_history[self.cur_step]
         self.indicators = self.stock_indicators_history[self.cur_step, :]
         self.cash_in_hand = self.init_invest
-	#self.current_position = (self.action_space - 1)/2
+        self.current_position = (self.action_space - 1)/2
         self.trade_count = 0
         self.trades_profitable = 0
 	#self.is_short = False
@@ -94,6 +94,7 @@ class TradingEnv(gym.Env):
         return self._get_obs()
 
     def _step(self, action):
+        self.returns.append(self._get_val()) 
         prev_val = self._get_val()
         self._trade(action)
         self.cur_step += 1
@@ -105,16 +106,20 @@ class TradingEnv(gym.Env):
         reward = cur_val - prev_val
         #if(self.is_short): reward = -reward
         reward *= (1-self.slippage_rate)
-        self.returns.append(reward) 
         done = self.cur_step == self.n_step - 1
         return self._get_obs(), reward, done
 
     def _get_obs(self):
         obs = []
         obs.extend(list(self.indicators))
-        obs.append(round(self.cash_in_hand/self.init_invest, 2))
-        obs.append(sharpe_ratio(self.returns))
+        obs.append(self.current_position)
+        obs.append(self._sharpe(self.returns))
         return obs
+
+    def _sharpe(self, returns):
+        diff = np.array(np.diff(returns))
+        sharpe = sharpe_ratio(diff)
+        return round(sharpe, 2) if not np.isnan(sharpe) else 0
 
     def _get_val(self):
         return self.stock_owned * self.stock_price + self.cash_in_hand #if not self.is_short else self.cash_in_hand - self.stock_borrowed * self.stock_price
@@ -129,8 +134,8 @@ class TradingEnv(gym.Env):
         elif(action in range((self.action_space - 1)//2)):
             if(self.stock_owned < (self.action_space - 1)/2):
                 self.signals.append(1)
+                #self.current_position = (self.action_space - 1)/2
                 return
-            self.trade_count += 1
             
             num_to_sell = (self.stock_owned // (action + 1))
             self.cash_in_hand += self.stock_price * num_to_sell
@@ -145,11 +150,14 @@ class TradingEnv(gym.Env):
         else:
             if(self.cash_in_hand // (self.action_space - action) < self.stock_price):
                 self.signals.append(1)
+                #self.current_position = (self.action_space - 1)/2
                 return
-                       
+           
+            self.trade_count += 1                       
             num_to_purchase = (self.cash_in_hand // (self.action_space - action)) // self.stock_price
             self.stock_owned += num_to_purchase
             self.cash_in_hand -= num_to_purchase * self.stock_price
             self.enter_price = self.stock_price
-
+        
+        self.current_position = action
         self.signals.append(action)
