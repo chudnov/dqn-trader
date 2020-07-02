@@ -26,7 +26,7 @@ dqn_type = 1
 mem = 2000
 update_freq = 10
 batch_size = 64
-gamma = 0.95
+gamma = 0.97
 epsilon = 1
 epsilon_min = 0.01
 epsilon_start = 200
@@ -90,9 +90,9 @@ if __name__ == '__main__':
                 agent.remember(state, action, reward, next_state, done)
             state = next_state
             if done:
-                count, ratio, sharpe, unrealized = env._stats().values()
-                print("episode: {}/{}, performed {} trades, {:,.2%} are profitable, with a sharpe ratio of {} and final episode unrealized pnl of: ${:,.2f}".format(
-                    e + 1, episodes, count, ratio, sharpe, unrealized))
+                count, ratio, risk_return, unrealized = env._stats().values()
+                print("episode: {}/{}, performed {} trades, {:,.2%} of one's sold are profitable, with a risk-adjusted ratio of {} and final episode unrealized pnl of: ${:,.2f}".format(
+                    e + 1, episodes, count, ratio, risk_return, unrealized))
                 # append episode end portfolio value
                 portfolio_value.append(unrealized)
                 break

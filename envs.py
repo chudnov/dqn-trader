@@ -2,7 +2,7 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 import numpy as np
-from empyrical import sharpe_ratio
+from empyrical import sharpe_ratio, sortino_ratio
 import pandas as pd
 
 class TradingEnv(gym.Env):
@@ -68,7 +68,7 @@ class TradingEnv(gym.Env):
         return {
             'trade_count': self.trade_count,
             'win_loss_ratio': win_loss_ratio,
-            'sharpe_ratio': self._sharpe(self.returns),
+            'risk_ratio': self._risk_adj(self.returns, ratio='sortino'),
             'unrealised_pl': self._get_val(),
         }
 
@@ -113,13 +113,13 @@ class TradingEnv(gym.Env):
         obs = []
         obs.extend(list(self.indicators))
         obs.append(self.current_position)
-        obs.append(self._sharpe(self.returns))
+        obs.append(self._risk_adj(self.returns, ratio='sortino'))
         return obs
 
-    def _sharpe(self, returns):
+    def _risk_adj(self, returns, ratio='sharpe'):
         diff = np.array(np.diff(returns))
-        sharpe = sharpe_ratio(diff)
-        return round(sharpe, 2) if not np.isnan(sharpe) else 0
+        risk_return = sharpe_ratio(diff) if ratio == 'sharpe' else sortino_ratio(diff)
+        return round(risk_return, 2) if not np.isnan(risk_return) else 0
 
     def _get_val(self):
         return self.stock_owned * self.stock_price + self.cash_in_hand #if not self.is_short else self.cash_in_hand - self.stock_borrowed * self.stock_price

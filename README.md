@@ -6,9 +6,8 @@ A stock trader powered with deep q-network.
 
 ### Dependencies
 
-Python 3. To install all the libraries, run `pip3 install -r requirements.txt`
-
-Additionally, you must run `brew install ta-lib` for ta-lib.
+- `brew install ta-lib`
+- `pip3 install -r requirements.txt`
 
 ### Table of content
 
@@ -24,11 +23,7 @@ Additionally, you must run `brew install ta-lib` for ta-lib.
 
 **To train a Deep Q agent**, run `python3 run.py --mode train --symbol <OHLC csv>`. There are other parameters and I encourage you look at the `run.py` script. After training, a trained model as well as the portfolio value history at episode end would be saved to disk.
 
-**To test the model performance on validation set**, run `python3 run.py --mode validate --symbol <OHLC csv> --weights <trained_model> --scaler <scaler pkl>`, where `<trained_model>` points to the local model weights file. Validation data portfolio value history at episode end would be saved to disk.
-
-
-**To test the model performance on test set**, run `python3 run.py --mode test --symbol <OHLC csv> --weights <trained_model> --scaler <scaler pkl>`, where `<trained_model>` points to the local model weights file. Test data portfolio value history at episode end would be saved to disk.
-
+**To test the model performance on test set**, run `python3 run.py --mode test --symbol <OHLC csv>`
 
 ### Visualize
 
