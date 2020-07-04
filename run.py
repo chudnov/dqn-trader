@@ -21,7 +21,6 @@ loss = 'mse'
 learning_rate = 0.01
 dqn_type = 1
 
-
 # Agent
 mem = 2000
 update_freq = 10
@@ -31,6 +30,10 @@ epsilon = 1
 epsilon_min = 0.01
 epsilon_start = 200
 epsilon_decay = 1e-3 
+
+# Env
+reward_len = 50
+reward_func = 'sharpe'
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -55,7 +58,7 @@ if __name__ == '__main__':
     fit(data_split, args.mode, args.symbol)
 
     # Create environment
-    env = TradingEnv(data_split[args.mode], initial_investment)
+    env = TradingEnv(data_split[args.mode], initial_investment, reward_len, reward_func)
 
     # Create model
     model = mlp(env.observation_space, env.action_space, activation, loss, learning_rate, dqn_type)
