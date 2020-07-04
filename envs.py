@@ -116,7 +116,7 @@ class TradingEnv(gym.Env):
     def _risk_adj(self):
         tmp = self.reward_len
         self.reward_len = self.n_step
-        r = self._reward()
+        r = round(self._reward(), 2)
         self.reward_len = tmp
         return r
 
@@ -147,7 +147,7 @@ class TradingEnv(gym.Env):
         
         # sell
         elif(action == 0):
-            self.cash_in_hand += self.stock_price * self.stock_owned 
+            self.cash_in_hand += (1-self.slippage_rate) * self.stock_price * self.stock_owned 
             curr_profit = self.stock_price - self.enter_price 
             self.enter_price = 0
             self.stock_owned = 0
@@ -158,7 +158,7 @@ class TradingEnv(gym.Env):
         # buy
         else:
             self.trade_count += 1                       
-            num_to_purchase = self.cash_in_hand // self.stock_price
+            num_to_purchase = self.cash_in_hand // ((1 + self.slippage_rate) * self.stock_price)
             self.stock_owned += num_to_purchase
             self.cash_in_hand -= num_to_purchase * self.stock_price
             self.enter_price = self.stock_price

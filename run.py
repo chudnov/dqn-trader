@@ -29,7 +29,7 @@ gamma = 0.97
 epsilon = 1
 epsilon_min = 0.01
 epsilon_start = 200
-epsilon_decay = 1e-3 
+epsilon_decay = 0.995  
 
 # Env
 reward_len = 50

@@ -74,7 +74,7 @@ class DQNAgent(object):
         self.model.fit(states, target_f, batch_size = self.batch_size, epochs=1, verbose=0)
 
         if self.epsilon > self.epsilon_min and self.step > self.epsilon_start:
-                self.epsilon -= self.epsilon_decay
+                self.epsilon *= self.epsilon_decay
         self.step += 1
 
     def load(self, name):
