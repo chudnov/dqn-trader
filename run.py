@@ -61,7 +61,7 @@ if __name__ == '__main__':
     model = mlp(env.observation_space, env.action_space, activation, loss, learning_rate, dqn_type)
 
     # Create agent
-    agent = DQNAgent(args.mode, model, env.action_space, mem, update_freq, batch_size, gamma, epsilon, epsilon_min, epsilon_start, epsilon_decay) 
+    agent = DQNAgent(env, args.mode, model, mem, update_freq, batch_size, gamma, epsilon, epsilon_min, epsilon_start, epsilon_decay) 
 
     # Store portfolio value after iterations
     portfolio_value = [initial_investment]

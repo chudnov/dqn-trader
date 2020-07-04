@@ -48,9 +48,9 @@ class TradingEnv(gym.Env):
         self.cash_in_hand = None
  
         # action space
-        self.action_space = 3 # 4 for buy, 1 for hold, 4 for sell but different levels (quarter)
+        self.action_space = 3
         # state space
-        self.observation_space = self.stock_indicators_history.shape[1] + 2
+        self.observation_space = self.stock_indicators_history.shape[1] 
 
         # seed and start
         self._seed()
@@ -68,7 +68,7 @@ class TradingEnv(gym.Env):
         return {
             'trade_count': self.trade_count,
             'win_loss_ratio': win_loss_ratio,
-            'risk_ratio': self._risk_adj(self.returns, ratio='sortino'),
+            'risk_ratio': self._risk_adj(self.returns, ratio='sharpe'),
             'unrealised_pl': self._get_val(),
         }
 
@@ -86,7 +86,7 @@ class TradingEnv(gym.Env):
         self.stock_price = self.stock_price_history[self.cur_step]
         self.indicators = self.stock_indicators_history[self.cur_step, :]
         self.cash_in_hand = self.init_invest
-        self.current_position = (self.action_space - 1)/2
+        self.current_position = 1 
         self.trade_count = 0
         self.trades_profitable = 0
 	#self.is_short = False
@@ -112,8 +112,6 @@ class TradingEnv(gym.Env):
     def _get_obs(self):
         obs = []
         obs.extend(list(self.indicators))
-        obs.append(self.current_position)
-        obs.append(self._risk_adj(self.returns, ratio='sortino'))
         return obs
 
     def _risk_adj(self, returns, ratio='sharpe'):
@@ -125,36 +123,26 @@ class TradingEnv(gym.Env):
         return self.stock_owned * self.stock_price + self.cash_in_hand #if not self.is_short else self.cash_in_hand - self.stock_borrowed * self.stock_price
 
     def _trade(self, action):
-        
+        #print("Action {} with {} cash and {} stock owned \n".format(action, self.cash_in_hand, self.stock_owned))       
+ 
         # hold
-        if(action == (self.action_space - 1)/2):
+        if(action == 1):
             pass
         
         # sell
-        elif(action in range((self.action_space - 1)//2)):
-            if(self.stock_owned < (self.action_space - 1)/2):
-                self.signals.append(1)
-                #self.current_position = (self.action_space - 1)/2
-                return
-            
-            num_to_sell = (self.stock_owned // (action + 1))
-            self.cash_in_hand += self.stock_price * num_to_sell
+        elif(action == 0):
+            self.cash_in_hand += self.stock_price * self.stock_owned 
             curr_profit = self.stock_price - self.enter_price 
             self.enter_price = 0
-            self.stock_owned -= num_to_sell
+            self.stock_owned = 0
             
             if(curr_profit > 0):
                 self.trades_profitable += 1
         
         # buy
         else:
-            if(self.cash_in_hand // (self.action_space - action) < self.stock_price):
-                self.signals.append(1)
-                #self.current_position = (self.action_space - 1)/2
-                return
-           
             self.trade_count += 1                       
-            num_to_purchase = (self.cash_in_hand // (self.action_space - action)) // self.stock_price
+            num_to_purchase = self.cash_in_hand // self.stock_price
             self.stock_owned += num_to_purchase
             self.cash_in_hand -= num_to_purchase * self.stock_price
             self.enter_price = self.stock_price

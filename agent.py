@@ -6,8 +6,7 @@ import math
 class DQNAgent(object):
     """ A simple Deep Q agent """
 
-    def __init__(self, mode, model, action_size, memory_size, update_target_freq, batch_size, gamma, epsilon, epsilon_min, epsilon_start, epsilon_decay):
-        self.action_size = action_size
+    def __init__(self, env, mode, model, memory_size, update_target_freq, batch_size, gamma, epsilon, epsilon_min, epsilon_start, epsilon_decay):
         self.memory = deque(maxlen=memory_size)
         self.gamma = gamma  # discount rate
         self.epsilon = epsilon  # exploration rate
@@ -20,15 +19,26 @@ class DQNAgent(object):
         self.model = model 
         self.model_sub = model 
         self.mode = mode
+        self.env = env
+        self.action_size = self.env.action_space
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
     def act(self, state):
+        start, stop = 0, self.action_size
+
+        if(self.env.stock_owned == 0): start += 1
+        if(self.env.cash_in_hand < self.env.stock_price + self.env.slippage_rate): stop -= 1         
+ 
         if self.mode == "train" and np.random.rand() <= self.epsilon:
-            return random.randrange(self.action_size)
-        act_values = self.model.predict(np.array([state]))
-        return np.argmax(act_values[0])  # returns action
+            return random.randrange(start, stop)        
+
+        act_values = self.model.predict(np.array([state]))[0]
+        for i in range(len(act_values)):
+            if i not in range(start, stop):
+                act_values[i] = -math.inf
+        return np.argmax(act_values)
 
     def update_target_model(self):
         self.model_sub.set_weights(self.model.get_weights())
