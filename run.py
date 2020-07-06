@@ -18,7 +18,7 @@ episodes = 500
 # Model 
 activation = 'relu'
 loss = 'mse' 
-learning_rate = 1e-3
+learning_rate = 1e-2
 dqn_type = 1
 
 # Agent

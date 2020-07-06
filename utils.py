@@ -26,24 +26,24 @@ def get_data(stock_symbol, is_detrend=False):
        'close': df['Close'],
        'volume': df['Volume']
     }  
-
+    
     t_df = pd.DataFrame()  
 
     t_df['close'] = inputs['close']
-    t_df['macd'] = MACD(inputs, fastperiod=12, slowperiod=26, signalperiod=9)[0] 
-    t_df['roc'] = ROC(inputs, timeperiod=10)
-    t_df['rsi'] = RSI(inputs, timeperiod=14)
-    t_df['willr'] = WILLR(inputs, timeperiod=14)
-    t_df['y_range'] = pd.Series(ATR(inputs, timeperiod=1)).shift(1)
 
-    #t_df['ma'] = SMA(inputs, timeperiod=25)
-    #t_df['ema'] = EMA(inputs, timeperiod=30)        
-    #t_df['atr'] = ATR(inputs, timeperiod=14)
+    t_df['macd'] = MACD(inputs, fastperiod=12, slowperiod=26, signalperiod=9)[0] 
+    t_df['mfi'] = MFI(inputs, timeperiod=14)
+    t_df['trix'] = TRIX(inputs, timeperiod=30)
+    t_df['cci'] = CCI(inputs, timeperiod=14)
+    t_df['aru'] = AROON(inputs, timeperiod=14)[0]
+    t_df['ard'] = AROON(inputs, timeperiod=14)[1]
+    t_df['atr'] = ATR(inputs, timeperiod=14)
+    t_df['rsi'] = RSI(inputs, timeperiod=14)
+
     first_valid_row = t_df.apply(pd.Series.first_valid_index).max()
 
     t_df = t_df.iloc[first_valid_row:]
     return t_df.to_numpy()
-
 
 def get_split_data(stock_symbol, ratio, detrend):
     data = np.around(get_data(stock_symbol, detrend))
