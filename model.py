@@ -3,6 +3,16 @@ from keras.layers import Dense, Lambda, LSTM
 from keras.optimizers import Adam
 from keras import backend as K
 
+def mlp(obs_shape, n_action, activation, loss, learning_rate, dqn_type):
+  model = Sequential()
+  model.add(LSTM(64, input_shape=obs_shape, return_sequences=True, activation=activation))
+  model.add(LSTM(64, activation=activation))
+  model.add(Dense(32, activation=activation))
+  model.add(Dense(n_action, activation='linear'))
+  model.compile(loss=loss, optimizer=Adam(lr=learning_rate)) 
+  return model
+
+'''
 def mlp(n_obs, n_action, activation, loss, learning_rate, dqn_type):
   """ A multi-layer perceptron """
   model = Sequential()
@@ -23,29 +33,6 @@ def mlp(n_obs, n_action, activation, loss, learning_rate, dqn_type):
 
   model.compile(loss=loss, optimizer=Adam(lr=learning_rate))
   return model
+'''
 
-def mlp2(window_size, n_market_features, n_private_vars, n_action, activation='relu', loss='mse', learning_rate = 0.01, dqn_type = 0):
-  """ A multi-layer perceptron """
-  indicators = Input(shape=(32,))
-  private_vars = Input(shape=(128,))
-  # the first branch operates on the first input
-  x = Dense(8, activation="relu")(inputA)
-  x = Dense(4, activation="relu")(x)
-  x = Model(inputs=inputA, outputs=x)
-  # the second branch opreates on the second input
-  y = Dense(64, activation="relu")(inputB)
-  y = Dense(32, activation="relu")(y)
-  y = Dense(4, activation="relu")(y)
-  y = Model(inputs=inputB, outputs=y)
-  # combine the output of the two branches
-  combined = concatenate([x.output, y.output])
-  # apply a FC layer and then a regression prediction on the
-  # combined outputs
-  z = Dense(2, activation="relu")(combined)
-  z = Dense(1, activation="linear")(z)
-  # our model will accept the inputs of the two branches and
-  # then output a single value
-  model = Model(inputs=[x.input, y.input], outputs=z)
 
-  model.compile(loss=loss, optimizer=Adam(lr=learning_rate))
-  return model

@@ -13,27 +13,28 @@ from utils import fit, get_split_data, maybe_make_dir, view_signals
 # Meta
 ratio = 70
 initial_investment = 20000
-episodes = 2000
+episodes = 500
 
 # Model 
 activation = 'relu'
 loss = 'mse' 
-learning_rate = 0.01
+learning_rate = 1e-3
 dqn_type = 1
 
 # Agent
 mem = 2000
 update_freq = 10
 batch_size = 64
-gamma = 0.97
+gamma = 0.99
 epsilon = 1
 epsilon_min = 0.01
-epsilon_start = 200
+epsilon_start = 4000
 epsilon_decay = 0.995  
 
 # Env
 reward_len = 50
 reward_func = 'sharpe'
+window_size = 20
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     fit(data_split, args.mode, args.symbol)
 
     # Create environment
-    env = TradingEnv(data_split[args.mode], initial_investment, reward_len, reward_func)
+    env = TradingEnv(data_split[args.mode], initial_investment, window_size, reward_len, reward_func)
 
     # Create model
     model = mlp(env.observation_space, env.action_space, activation, loss, learning_rate, dqn_type)

@@ -1,5 +1,5 @@
 import gym
-from gym import spaces
+#from gym import spaces
 from gym.utils import seeding
 import numpy as np
 import pandas as pd
@@ -18,11 +18,11 @@ class TradingEnv(gym.Env):
       - if buying multiple stock, equally distribute cash in hand and then utilize the balance
     """
 
-    def __init__(self, train_data, init_invest, reward_len, reward_func, slippage_rate=0.001):
+    def __init__(self, train_data, init_invest, window_size, reward_len, reward_func, slippage_rate=0.001):
         # data
         self.stock_price_history = train_data[0]
         self.stock_indicators_history = train_data[1]
-        self.n_step = self.stock_price_history.shape[0]
+        self.n_step = self.stock_price_history.shape[0] - window_size
         self.signals = None
 
         # instance attributes
@@ -32,12 +32,12 @@ class TradingEnv(gym.Env):
         self.stock_price = None
         self.stock_owned = None
         self.stock_borrowed = None
-        self.indicators = None
         self.returns = None
         self.current_position = None
         #self.is_short = None
         self.reward_len = reward_len
         self.reward_func = reward_func
+        self.window_size = window_size
  
         self.slippage_rate = slippage_rate
 
@@ -52,7 +52,7 @@ class TradingEnv(gym.Env):
         # action space
         self.action_space = 3
         # state space
-        self.observation_space = self.stock_indicators_history.shape[1] 
+        self.observation_space = (self.window_size, self.stock_indicators_history.shape[1]) 
 
         # seed and start
         self._seed()
@@ -81,12 +81,11 @@ class TradingEnv(gym.Env):
     def _reset(self):
         self.signals = []
         self.returns = []
-        self.cur_step = 0
+        self.cur_step = self.window_size
         self.enter_price = 0
         self.stock_borrowed = 0
         self.stock_owned = 0
         self.stock_price = self.stock_price_history[self.cur_step]
-        self.indicators = self.stock_indicators_history[self.cur_step, :]
         self.cash_in_hand = self.init_invest
         self.current_position = 1 
         self.trade_count = 0
@@ -101,8 +100,6 @@ class TradingEnv(gym.Env):
         self.cur_step += 1
         # update price
         self.stock_price = self.stock_price_history[self.cur_step]
-        # update indicators
-        self.indicators = self.stock_indicators_history[self.cur_step, :]
         reward = self._reward() 
         #if(self.is_short): reward = -reward
         done = self.cur_step == self.n_step - 1
@@ -110,7 +107,8 @@ class TradingEnv(gym.Env):
 
     def _get_obs(self):
         obs = []
-        obs.extend(list(self.indicators))
+        #obs.extend(list(self.indicators))
+        obs = self.stock_indicators_history[self.cur_step-self.window_size:self.cur_step, :]
         return obs
 
     def _risk_adj(self):

@@ -47,12 +47,10 @@ class DQNAgent(object):
         """ vectorized implementation; 30x speed up compared with for loop """
         minibatch = np.array(random.sample(self.memory, self.batch_size))
 
-        states = np.concatenate(minibatch[:, 0]).reshape(
-            self.batch_size, -1)
+        states = np.concatenate(minibatch[:, 0]).reshape(self.batch_size, self.env.window_size, -1)
         actions = np.array([tup[1] for tup in minibatch])
         rewards = np.array([tup[2] for tup in minibatch])
-        next_states = np.concatenate(minibatch[:, 3]).reshape(
-            self.batch_size, -1)
+        next_states = np.concatenate(minibatch[:, 3]).reshape(self.batch_size, self.env.window_size, -1)
         done = np.array([tup[4] for tup in minibatch])
 
         double_dqn = self.model_sub.predict(next_states)[range(
