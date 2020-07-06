@@ -32,9 +32,9 @@ epsilon_start = 4000
 epsilon_decay = 0.995  
 
 # Env
-reward_len = 50
 reward_func = 'sharpe'
 window_size = 20
+slippage_rate = 0.001
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     fit(data_split, args.mode, args.symbol)
 
     # Create environment
-    env = TradingEnv(data_split[args.mode], initial_investment, window_size, reward_len, reward_func)
+    env = TradingEnv(data_split[args.mode], initial_investment, window_size, reward_func, slippage_rate)
 
     # Create model
     model = mlp(env.observation_space, env.action_space, activation, loss, learning_rate, dqn_type)

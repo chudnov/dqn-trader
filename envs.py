@@ -18,11 +18,13 @@ class TradingEnv(gym.Env):
       - if buying multiple stock, equally distribute cash in hand and then utilize the balance
     """
 
-    def __init__(self, train_data, init_invest, window_size, reward_len, reward_func, slippage_rate=0.001):
+    def __init__(self, train_data, init_invest, window_size, reward_func, slippage_rate):
         # data
         self.stock_price_history = train_data[0]
         self.stock_indicators_history = train_data[1]
         self.n_step = self.stock_price_history.shape[0] - window_size
+        
+        self.base_sharpe = None 
         self.signals = None
 
         # instance attributes
@@ -35,7 +37,6 @@ class TradingEnv(gym.Env):
         self.returns = None
         self.current_position = None
         #self.is_short = None
-        self.reward_len = reward_len
         self.reward_func = reward_func
         self.window_size = window_size
  
@@ -81,6 +82,7 @@ class TradingEnv(gym.Env):
     def _reset(self):
         self.signals = []
         self.returns = []
+        self.base_sharpe = [self.init_invest] * self.window_size 
         self.cur_step = self.window_size
         self.enter_price = 0
         self.stock_borrowed = 0
@@ -96,6 +98,7 @@ class TradingEnv(gym.Env):
 
     def _step(self, action):
         self.returns.append(self._get_val()) 
+        self.base_sharpe.append(self._get_val())
         self._trade(action)
         self.cur_step += 1
         # update price
@@ -112,15 +115,7 @@ class TradingEnv(gym.Env):
         return obs
 
     def _risk_adj(self):
-        tmp = self.reward_len
-        self.reward_len = self.n_step
-        r = round(self._reward(), 2)
-        self.reward_len = tmp
-        return r
-
-    def _reward(self):
-        length = min(self.cur_step, self.reward_len)
-        returns = np.diff(self.returns)[-length:]
+        returns = np.diff(self.returns)
 
         if self.reward_func == 'sortino':
           reward = sortino_ratio(returns)
@@ -129,10 +124,19 @@ class TradingEnv(gym.Env):
         elif self.reward_func == 'omega':
           reward = omega_ratio(returns)
         else:
-           reward = sharpe_ratio(returns) 
+          reward = sharpe_ratio(returns)
 
-        return reward if abs(reward) != math.inf and not np.isnan(reward) else 0
+        return round(reward, 2) if abs(reward) != math.inf and not np.isnan(reward) else 0
 
+    def _reward(self):
+        sharpe_hist = pd.DataFrame(self.base_sharpe).pct_change().fillna(0.0).values
+        A = np.mean(sharpe_hist)
+        B = np.mean(sharpe_hist**2)
+        delta_A = sharpe_hist[self.cur_step-1] - A
+        delta_B = sharpe_hist[self.cur_step-1]**2 - B
+        Dt = (B*delta_A - 0.5*A*delta_B) / (B-A**2)**(3/2)
+        return round(Dt[0], 3)
+ 
     def _get_val(self):
         return self.stock_owned * self.stock_price + self.cash_in_hand #if not self.is_short else self.cash_in_hand - self.stock_borrowed * self.stock_price
 

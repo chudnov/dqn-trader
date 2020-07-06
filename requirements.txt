@@ -7,4 +7,4 @@ h5py
 matplotlib
 gym==0.9.4
 empyrical
-TA-Lib
+ta
