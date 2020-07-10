@@ -31,9 +31,9 @@ def get_data(stock_symbol, is_detrend=False):
 
     t_df['close'] = inputs['close']
 
+    #t_df['trix'] = TRIX(inputs, timeperiod=30)
     t_df['macd'] = MACD(inputs, fastperiod=12, slowperiod=26, signalperiod=9)[0] 
     t_df['mfi'] = MFI(inputs, timeperiod=14)
-    t_df['trix'] = TRIX(inputs, timeperiod=30)
     t_df['cci'] = CCI(inputs, timeperiod=14)
     t_df['aru'] = AROON(inputs, timeperiod=14)[0]
     t_df['ard'] = AROON(inputs, timeperiod=14)[1]
@@ -46,7 +46,7 @@ def get_data(stock_symbol, is_detrend=False):
     return t_df.to_numpy()
 
 def get_split_data(stock_symbol, ratio, detrend):
-    data = np.around(get_data(stock_symbol, detrend))
+    data = get_data(stock_symbol, detrend)
 
     price = data[:,0]
     data = data[:,1:]
@@ -63,14 +63,14 @@ def get_split_data(stock_symbol, ratio, detrend):
 def fit(data_split, mode, symbol):	
     if(mode == 'train'):
         scaler = MinMaxScaler((0.1, 1))
-        data_split[mode][1] = scaler.fit_transform(data_split[mode][1])
+        data_split[mode][1] = np.round(scaler.fit_transform(data_split[mode][1]), 2) # round to nearest two
 	# save scaler to disk
         with open('scalers/scaler-{}.p'.format(symbol), 'wb') as fp:
             pickle.dump(scaler, fp)
     else:
         # load scaler
         scaler = pickle.load(open('scalers/scaler-{}.p'.format(symbol), 'rb'))
-        data_split[mode][1] = scaler.fit_transform(data_split[mode][1])
+        data_split[mode][1] = np.round(scaler.fit_transform(data_split[mode][1]), 2) # round to nearest two
 
 def detrend(df):
     del df[df.columns[0]]

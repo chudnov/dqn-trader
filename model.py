@@ -1,13 +1,14 @@
 from keras.models import Sequential, Model
-from keras.layers import Dense, Lambda, LSTM
+from keras.layers import Dense, Lambda, LSTM, Dropout
 from keras.optimizers import Adam
 from keras import backend as K
 
 def mlp(obs_shape, n_action, activation, loss, learning_rate, dqn_type):
   model = Sequential()
-  model.add(LSTM(64, input_shape=obs_shape, return_sequences=True, activation=activation))
-  model.add(LSTM(64, activation=activation))
-  model.add(Dense(32, activation=activation))
+  model.add(LSTM(128, input_shape=obs_shape, return_sequences=True, activation=activation))
+  model.add(Dropout(0.2))
+  model.add(LSTM(128, activation=activation))
+  model.add(Dropout(0.2))
   model.add(Dense(n_action, activation='linear'))
   model.compile(loss=loss, optimizer=Adam(lr=learning_rate)) 
   return model

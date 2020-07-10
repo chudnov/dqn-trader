@@ -52,7 +52,7 @@ class DQNAgent(object):
         rewards = np.array([tup[2] for tup in minibatch])
         next_states = np.concatenate(minibatch[:, 3]).reshape(self.batch_size, self.env.window_size, -1)
         done = np.array([tup[4] for tup in minibatch])
-
+   
         double_dqn = self.model_sub.predict(next_states)[range(
             self.batch_size), np.argmax(self.model.predict(next_states), axis=1)]
 
@@ -60,14 +60,14 @@ class DQNAgent(object):
         target = rewards + self.gamma * double_dqn 
         # end state target is reward itself (no lookahead)
         target[done] = rewards[done]
-
+  
         # Q(s, a)
         target_f = self.model.predict(states)
         # make the agent to approximately map the current state to future discounted reward
         target_f[range(self.batch_size), actions] = target
 
         if(self.step % self.update_target_freq == 0):
-            self.update_target_model()
+               self.update_target_model()
 
         self.model.fit(states, target_f, batch_size = self.batch_size, epochs=1, verbose=0)
 

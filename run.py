@@ -10,6 +10,9 @@ from agent import DQNAgent
 from model import mlp
 from utils import fit, get_split_data, maybe_make_dir, view_signals
 
+np.set_printoptions(threshold=np.inf)
+
+
 # Meta
 ratio = 70
 initial_investment = 20000

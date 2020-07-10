@@ -22,7 +22,7 @@ class TradingEnv(gym.Env):
         # data
         self.stock_price_history = train_data[0]
         self.stock_indicators_history = train_data[1]
-        self.n_step = self.stock_price_history.shape[0] - window_size
+        self.n_step = self.stock_price_history.shape[0]
         
         self.base_sharpe = None 
         self.signals = None
@@ -97,10 +97,10 @@ class TradingEnv(gym.Env):
         return self._get_obs()
 
     def _step(self, action):
-        self.returns.append(self._get_val()) 
-        self.base_sharpe.append(self._get_val())
         self._trade(action)
         self.cur_step += 1
+        self.returns.append(self._get_val()) 
+        self.base_sharpe.append(self._get_val())
         # update price
         self.stock_price = self.stock_price_history[self.cur_step]
         reward = self._reward() 
