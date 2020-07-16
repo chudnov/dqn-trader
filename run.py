@@ -1,5 +1,4 @@
 import pickle
-import time
 import numpy as np
 import argparse
 import re
@@ -31,12 +30,12 @@ batch_size = 64
 gamma = 0.99
 epsilon = 1
 epsilon_min = 0.01
-epsilon_start = 4000
-epsilon_decay = 0.995  
+epsilon_start = 30000
+epsilon_decay = 0.997  
 
 # Env
 reward_func = 'sharpe'
-window_size = 20
+window_size = 1 
 slippage_rate = 0.001
 
 if __name__ == '__main__':
@@ -90,7 +89,7 @@ if __name__ == '__main__':
 
     for e in range(episodes):
         state = env.reset()
-        for time in range(env.n_step):
+        while (True):
             action = agent.act(state)
             next_state, reward, done = env.step(action)
             if args.mode == 'train':
