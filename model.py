@@ -5,10 +5,11 @@ from keras import backend as K
 
 def mlp(obs_shape, n_action, activation, loss, learning_rate, dqn_type):
   model = Sequential()
-  model.add(LSTM(128, input_shape=obs_shape, return_sequences=True, activation=activation))
+  model.add(LSTM(32, input_shape=obs_shape, return_sequences=True, activation=activation))
   model.add(Dropout(0.2))
-  model.add(LSTM(128, activation=activation))
+  model.add(LSTM(64, activation=activation))
   model.add(Dropout(0.2))
+  #model.add(Dense(32, activation=activation))
   model.add(Dense(n_action, activation='linear'))
   model.compile(loss=loss, optimizer=Adam(lr=learning_rate)) 
   return model

@@ -2,6 +2,7 @@ from collections import deque
 import random
 import numpy as np
 import math
+import copy
 
 class DQNAgent(object):
     """ A simple Deep Q agent """
@@ -17,7 +18,7 @@ class DQNAgent(object):
         self.batch_size = batch_size
         self.step = 0
         self.model = model 
-        self.model_sub = model 
+        self.model_sub = copy.deepcopy(model) 
         self.mode = mode
         self.env = env
         self.action_size = self.env.action_space
@@ -29,7 +30,7 @@ class DQNAgent(object):
         start, stop = 0, self.action_size
 
         if(self.env.stock_owned == 0): start += 1
-        if(self.env.cash_in_hand < self.env.stock_price + self.env.slippage_rate): stop -= 1         
+        if(self.env.cash_in_hand < (1 + self.env.slippage_rate) * self.env.stock_price): stop -= 1         
  
         if self.mode == "train" and np.random.rand() <= self.epsilon:
             return random.randrange(start, stop)        
@@ -47,10 +48,10 @@ class DQNAgent(object):
         """ vectorized implementation; 30x speed up compared with for loop """
         minibatch = np.array(random.sample(self.memory, self.batch_size))
 
-        states = np.concatenate(minibatch[:, 0]).reshape(self.batch_size, self.env.window_size, -1)
+        states = np.concatenate(minibatch[:, 0]).reshape(self.batch_size, self.env.observation_space[0], self.env.observation_space[1])
         actions = np.array([tup[1] for tup in minibatch])
         rewards = np.array([tup[2] for tup in minibatch])
-        next_states = np.concatenate(minibatch[:, 3]).reshape(self.batch_size, self.env.window_size, -1)
+        next_states = np.concatenate(minibatch[:, 3]).reshape(self.batch_size, self.env.observation_space[0], self.env.observation_space[1])
         done = np.array([tup[4] for tup in minibatch])
    
         double_dqn = self.model_sub.predict(next_states)[range(

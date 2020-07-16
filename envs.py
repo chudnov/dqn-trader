@@ -53,7 +53,7 @@ class TradingEnv(gym.Env):
         # action space
         self.action_space = 3
         # state space
-        self.observation_space = (self.window_size, self.stock_indicators_history.shape[1]) 
+        self.observation_space = (self.window_size, self.stock_indicators_history.shape[1])
 
         # seed and start
         self._seed()
@@ -97,20 +97,17 @@ class TradingEnv(gym.Env):
         return self._get_obs()
 
     def _step(self, action):
+        self.returns.append(self._get_val())
+        reward = self._immediate_pnl(action) + self._long_term_pnl(action)
         self._trade(action)
         self.cur_step += 1
-        self.returns.append(self._get_val()) 
-        self.base_sharpe.append(self._get_val())
-        # update price
         self.stock_price = self.stock_price_history[self.cur_step]
-        reward = self._reward() 
         #if(self.is_short): reward = -reward
         done = self.cur_step == self.n_step - 1
         return self._get_obs(), reward, done
 
     def _get_obs(self):
         obs = []
-        #obs.extend(list(self.indicators))
         obs = self.stock_indicators_history[self.cur_step-self.window_size:self.cur_step, :]
         return obs
 
@@ -127,6 +124,20 @@ class TradingEnv(gym.Env):
           reward = sharpe_ratio(returns)
 
         return round(reward, 2) if abs(reward) != math.inf and not np.isnan(reward) else 0
+
+    def _immediate_pnl(self, action):
+        prev = self.stock_price_history[self.cur_step]
+        cur = self.stock_price_history[self.cur_step + 1]
+        reward = math.log(cur/prev) if action > 0 else -math.log(cur/prev)
+        return reward
+ 
+    def _long_term_pnl(self, action):
+        reward = 0
+        if(action == 0):
+           cur = self.stock_price
+           prev = self.enter_price
+           reward = math.log(cur/prev)
+        return reward
 
     def _reward(self):
         sharpe_hist = pd.DataFrame(self.base_sharpe).pct_change().fillna(0.0).values
