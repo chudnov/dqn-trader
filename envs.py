@@ -108,9 +108,10 @@ class TradingEnv(gym.Env):
 
     def _get_obs(self):
         obs = []
-        obs = self.stock_indicators_history[self.cur_step-self.window_size:self.cur_step, :]
+        #obs = self.stock_indicators_history[self.cur_step-self.window_size:self.cur_step, :]
+        obs = self.stock_indicators_history[self.cur_step, :]
         return obs
-
+	
     def _risk_adj(self):
         returns = np.diff(self.returns)
 
