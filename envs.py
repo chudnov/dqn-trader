@@ -98,10 +98,11 @@ class TradingEnv(gym.Env):
 
     def _step(self, action):
         self.returns.append(self._get_val())
-        reward = self._immediate_pnl(action) + self._long_term_pnl(action)
+        reward = self._reward_pnl(action)
         self._trade(action)
         self.cur_step += 1
         self.stock_price = self.stock_price_history[self.cur_step]
+        #print("Action {} with reward {}. Price was {} and now is {}".format(action, reward, self.stock_price_history[self.cur_step - 1], self.stock_price_history[self.cur_step]))
         #if(self.is_short): reward = -reward
         done = self.cur_step == self.n_step - 1
         return self._get_obs(), reward, done
@@ -126,18 +127,10 @@ class TradingEnv(gym.Env):
 
         return round(reward, 2) if abs(reward) != math.inf and not np.isnan(reward) else 0
 
-    def _immediate_pnl(self, action):
-        prev = self.stock_price_history[self.cur_step]
-        cur = self.stock_price_history[self.cur_step + 1]
-        reward = math.log(cur/prev) if action > 0 else -math.log(cur/prev)
-        return reward
- 
-    def _long_term_pnl(self, action):
-        reward = 0
-        if(action == 0):
-           cur = self.stock_price
-           prev = self.enter_price
-           reward = math.log(cur/prev)
+    def _reward_pnl(self, action):
+        prev = self.stock_price_history[self.cur_step] if action > 0 else self.enter_price
+        cur = self.stock_price_history[self.cur_step + 1] if action > 0 else self.stock_price
+        reward = math.log(cur/prev)
         return reward
 
     def _reward(self):
@@ -153,7 +146,7 @@ class TradingEnv(gym.Env):
         return self.stock_owned * self.stock_price + self.cash_in_hand #if not self.is_short else self.cash_in_hand - self.stock_borrowed * self.stock_price
 
     def _trade(self, action):
-        #print("Action {} with {} cash and {} stock owned \n".format(action, self.cash_in_hand, self.stock_owned))       
+        #print("{} cash and {} stock owned \n".format(self.cash_in_hand, self.stock_owned))       
  
         # hold
         if(action == 1):

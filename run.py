@@ -99,6 +99,7 @@ if __name__ == '__main__':
                 count, ratio, risk_return, unrealized = env._stats().values()
                 print("episode: {}/{}, performed {} trades, {:,.2%} of one's sold are profitable, with a risk-adjusted ratio of {} and final episode unrealized pnl of: ${:,.2f}".format(
                     e + 1, episodes, count, ratio, risk_return, unrealized))
+                print("Epsilon val is {}".format(agent.epsilon))
                 # append episode end portfolio value
                 portfolio_value.append(unrealized)
                 break
