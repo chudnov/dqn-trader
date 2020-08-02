@@ -11,7 +11,6 @@ from utils import fit, get_split_data, maybe_make_dir, view_signals
 
 np.set_printoptions(threshold=np.inf)
 
-
 # Meta
 ratio = 70
 initial_investment = 20000
@@ -30,8 +29,8 @@ batch_size = 64
 gamma = 0.99
 epsilon = 1
 epsilon_min = 0.01
-epsilon_start = 30000
-epsilon_decay = 0.997  
+epsilon_start = 0
+epsilon_decay = 0.99997  
 
 # Env
 reward_func = 'sharpe'
