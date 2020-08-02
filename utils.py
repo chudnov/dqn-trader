@@ -31,7 +31,7 @@ def get_data(stock_symbol, is_detrend=False):
 
     t_df['close'] = inputs['close']
 
-    t_df['trix'] = TRIX(inputs, timeperiod=30)
+    t_df['trix'] = TRIX(inputs, timeperiod=14)
     t_df['macd'] = MACD(inputs, fastperiod=12, slowperiod=26, signalperiod=9)[0] 
     t_df['mfi'] = MFI(inputs, timeperiod=14)
     t_df['cci'] = CCI(inputs, timeperiod=14)
